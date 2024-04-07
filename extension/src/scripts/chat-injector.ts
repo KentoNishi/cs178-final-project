@@ -1,3 +1,3 @@
-import { getCartInfo } from '../utils/scraper';
+import { getMyHarvardCourseInfo } from '../utils/scraper';
 
-console.log(getCartInfo());
+console.log(getMyHarvardCourseInfo());
