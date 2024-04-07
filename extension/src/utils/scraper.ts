@@ -22,3 +22,57 @@ export const getMyHarvardCourseInfo = async () => {
   const terms = cartTerms.map((term, i) => ({ ...term, enrolledCourses: enrolledTerms[i].cartClasses }));
   return terms;
 };
+
+interface RequirementDetail {
+  Requirement: string;
+  RequirementLine: string;
+  RequirementLineDate: string;
+  RequirementStatus: string;
+  AcademicProgram: string;
+  AcademicPlan: string;
+  RequirementSAA_Descr80: string;
+  RequirementLineDescr80: string;
+  RequirementStatusDescr: string;
+  RequirementStatusTooltip: string;
+  HasSearchText?: string;
+  SearchText?: string;
+}
+
+interface RequirementGroup {
+  RequirementGroup: string;
+  RequirementGroupDate: string;
+  RequirementGroupDescr: string;
+  RequirementGroupSAA_Descr80: string;
+  RequirementGroupDescrLong: string;
+  Requirements: RequirementDetail[];
+}
+
+interface Config {
+  StudentId: string;
+  Institution: string;
+  AcadCareer: string;
+  AdvisorView: boolean;
+  StudentName: string;
+  AnalysisDB_Seq: number;
+  ReportType: string;
+  FlagCoursesTaken: boolean;
+}
+
+interface DebugInfo {
+  numRows_SAA_ARSLT_RGVW: number;
+  numRows_HU_SAARSLT_RLVW: number;
+}
+
+interface AcademicRecord {
+  Config: Config;
+  Results: RequirementGroup[];
+  Debug: DebugInfo;
+}
+
+
+export const getMyHarvardRequirements = async (): Promise<AcademicRecord> => {
+  const res = await (await fetch('https://portal.my.harvard.edu/psp/hrvihprd/EMPLOYEE/EMPL/s/WEBLIB_HU_SCL.ISCRIPT1.FieldFormula.IScript_SearchByReq?ACAD_CAREER=HCOL')).text();
+  const doc = new DOMParser().parseFromString(res, 'text/html');
+  const json = JSON.parse(doc.querySelector('.ptprtlcontainer')?.textContent as string);
+  return json;
+};

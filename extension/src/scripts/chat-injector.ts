@@ -1,3 +1,8 @@
-import { getMyHarvardCourseInfo } from '../utils/scraper';
+import { getMyHarvardCourseInfo, getMyHarvardRequirements } from '../utils/scraper';
 
-console.log(getMyHarvardCourseInfo());
+(async () => {
+  const [courses, requirements] = await Promise.all(
+    [getMyHarvardCourseInfo(), getMyHarvardRequirements()]
+  );
+  console.log(courses, requirements);
+})();
