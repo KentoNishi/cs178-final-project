@@ -17,5 +17,15 @@
   "background": {
     "{{chrome}}.service_worker": "src/background.ts",
     "{{firefox}}.scripts": ["src/background.ts"]
-  }
+  },
+  "content_scripts": [{
+    "matches": [
+      "https://portal.my.harvard.edu/psp/hrvihprd/EMPLOYEE/EMPL/h/?tab=HU_CLASS_SEARCH*"
+    ],
+    "js": [
+      "src/scripts/chat-injector.ts"
+    ],
+    "css": [""],
+    "all_frames": true
+  }]
 }
