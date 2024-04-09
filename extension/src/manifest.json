@@ -25,7 +25,7 @@
     "js": [
       "src/scripts/chat-injector.ts"
     ],
-    "css": [""],
+    "css": ["src/styles/search.css"],
     "all_frames": true
   }]
 }
