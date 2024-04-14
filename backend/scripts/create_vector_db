@@ -1,35 +1,33 @@
-import openai
 import pandas as pd
 import os
 import chromadb
 from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
-from dotenv import load_dotenv
+from utils import load_env
+from config import CONFIG
 import sys
-import json
 
 '''
 Configuration
 '''
-INPUT_FILE = "../embeddings/embeddings.jsonl"
-OUTPUT_FOLDER = "../vector_db/"
-EMBEDDING_MODEL = "text-embedding-3-small"
 
 # Loading .env for OpenAI API key
-dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-load_dotenv(dotenv_path)
-if os.getenv("OPENAI_API_KEY") is not None:
-  openai.api_key = os.getenv("OPENAI_API_KEY")
-  print ("OPENAI_API_KEY is ready!")
-else:
-  print("OPENAI_API_KEY environment variable not found, check .env is setup correctly!")
-  sys.exit(1)
+load_env()
 
 # Setup embedding function and chroma client
-embedding_function = OpenAIEmbeddingFunction(api_key=os.environ.get('OPENAI_API_KEY'), model_name=EMBEDDING_MODEL)
-chroma_client = chromadb.PersistentClient(path=OUTPUT_FOLDER)
+embedding_function = OpenAIEmbeddingFunction(api_key=os.environ.get('OPENAI_API_KEY'), model_name=CONFIG.embedding_model)
+chroma_client = chromadb.PersistentClient(path=CONFIG.vector_db_path)
+
+# Reset db if required
+if (CONFIG.reset_db):
+  if (input("Enter exactly CONFIRM if you wish to reset the database: ") == "CONFIRM"):
+    if chroma_client.reset():
+      print("Reset vector database successfully")
+    else:
+      print("Vector database failed to reset properly")
+      sys.exit(1)
 
 # Bringing in the data
-df = pd.read_json(INPUT_FILE, lines=True).T
+df = pd.read_json(CONFIG.embeddings_file, lines=True).T
 print(df.columns)
 
 # Collections
@@ -38,7 +36,7 @@ try:
 except ValueError:
   course_collection = chroma_client.create_collection(name='course_chunks', embedding_function=embedding_function)
 
-#
+# Add all the embeddings!
 for courseID, course_data in df.iterrows():
   embedding_data = course_data[0]
   for chunk in embedding_data:
@@ -47,4 +45,4 @@ for courseID, course_data in df.iterrows():
       embeddings = chunk["embedding"],
       metadatas = [{"text": chunk["text"]}]
     )
-  break
+

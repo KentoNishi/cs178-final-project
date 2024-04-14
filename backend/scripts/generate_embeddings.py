@@ -24,12 +24,10 @@ import sys
 import os
 from bs4 import BeautifulSoup
 from collections import defaultdict
-from dotenv import load_dotenv
-from utils import progbar
+from utils import progbar, load_env
 
 # Load backend .env, needed for OpenAI API key
-dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-load_dotenv(dotenv_path)
+load_env()
 
 # Initialize the OpenAI client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
