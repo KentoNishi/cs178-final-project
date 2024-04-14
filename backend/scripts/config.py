@@ -7,5 +7,6 @@ class Config:
     self.embedding_model = "text-embedding-3-small"
     self.env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
     self.reset_db = True
+    self.collection_name = "course_chunks"
 
 CONFIG = Config()

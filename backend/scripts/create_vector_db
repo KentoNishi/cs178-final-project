@@ -32,9 +32,9 @@ print(df.columns)
 
 # Collections
 try:
-  course_collection = chroma_client.get_collection("course_chunks", embedding_function=embedding_function)
+  course_collection = chroma_client.get_collection(name=CONFIG.collection_name, embedding_function=embedding_function)
 except ValueError:
-  course_collection = chroma_client.create_collection(name='course_chunks', embedding_function=embedding_function)
+  course_collection = chroma_client.create_collection(name=CONFIG.collection_name, embedding_function=embedding_function)
 
 # Add all the embeddings!
 for courseID, course_data in df.iterrows():

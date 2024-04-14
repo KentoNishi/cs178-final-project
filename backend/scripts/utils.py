@@ -1,4 +1,4 @@
-from config import CONFIG
+from scripts.config import CONFIG
 import os
 from dotenv import load_dotenv
 import sys
