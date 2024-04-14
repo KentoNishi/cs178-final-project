@@ -26,6 +26,8 @@ dist-ssr
 # Config files
 .webextrc
 .webextrc.*
-
-.yarn
 .env
+
+# Currently not tracking the embedding document or vector_db as they're both very large
+/embeddings
+/vector_db
