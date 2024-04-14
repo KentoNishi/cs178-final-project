@@ -1,4 +1,5 @@
 import { getMyHarvardCourseInfo, getMyHarvardRequirements } from '../utils/scraper';
+import { performQueryWrapper } from './perform-query';
 
 (async () => {
   const [courses, requirements] = await Promise.all(
@@ -17,6 +18,7 @@ import { getMyHarvardCourseInfo, getMyHarvardRequirements } from '../utils/scrap
     newButton.href = '';
     newButton.addEventListener('click', (event) => {
       event.preventDefault();
+      performQueryWrapper();
     });
     child?.after(newButton);
   };
