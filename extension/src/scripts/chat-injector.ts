@@ -1,5 +1,6 @@
 import { getMyHarvardCourseInfo, getMyHarvardRequirements } from '../utils/scraper';
 import Tooltip from '../components/Tooltip.svelte';
+import ChatPanel from '../components/ChatPanel.svelte';
 
 (async () => {
   const [courses, requirements] = await Promise.all(
@@ -15,6 +16,16 @@ import Tooltip from '../components/Tooltip.svelte';
       target: tooltipWrapper,
     });
     searchBar?.after(tooltipWrapper);
+    const chatPanel = new ChatPanel({
+      target: document.body,
+      props: {
+      },
+    });
+    const googleMaterialFont = document.createElement('link');
+    // <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    googleMaterialFont.rel = 'stylesheet';
+    googleMaterialFont.href = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200';
+    document.head.appendChild(googleMaterialFont);
   };
   const interval = setInterval(callback, 100);
 })();

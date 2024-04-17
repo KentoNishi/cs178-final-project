@@ -1,7 +1,12 @@
 <script lang="ts">
+  import { chatPanelOpen } from '../ts/stores';
+    import Popup from '../pages/Popup.svelte';
 </script>
 
-<div class="tooltip-content bg-primary">
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<div class="tooltip-content bg-primary" on:click|preventDefault={() => {
+  $chatPanelOpen = true;
+}}>
   You can now search courses with ChatGPT! 
   <a href="/" on:click|preventDefault style="margin-left: 12px;">
     Start Chat
