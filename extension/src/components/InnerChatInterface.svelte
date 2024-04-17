@@ -18,9 +18,9 @@
     {#each $chatMessages as message, i}
       <div class="message" class:system={message.sender === Sender.System} class:user={message.sender === Sender.User}>
         {#if message.sender === Sender.System}
-          <div class="system-message">{message.tokens.join(' ')}</div>
+          <div class="system-message">{message.tokens.join('')}</div>
         {:else}
-          <div class="user-message">{message.tokens.join(' ')}</div>
+          <div class="user-message">{message.tokens.join('')}</div>
         {/if}
       </div>
     {/each}
@@ -37,16 +37,19 @@
 
 <style>
   .split-wrapper {
-    display: grid;
-    grid-template-rows: 1fr auto;
+    display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 12px;
+    padding: 12px 0px 12px 12px;
+  }
+
+  .message-scroller {
+    flex: 1;
+    overflow-y: scroll;
   }
 
   .split-wrapper {
     height: 100%;
-    overflow-y: auto;
   }
 
   .message {
@@ -83,6 +86,7 @@
     align-items: center;
     border-top: 1px solid #b0b0b0;
     padding-top: 12px;
+    margin-right: 12px;
   }
   
   .textbox {
