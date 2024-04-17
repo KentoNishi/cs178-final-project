@@ -1,0 +1,36 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Config files
+.webextrc
+.webextrc.*
+.env
+
+# Currently not tracking the embedding document or vector_db as they're both very large
+/embeddings
+/vector_db
+
+# Any pycache
+**/__pycache__/
