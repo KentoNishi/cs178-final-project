@@ -22,7 +22,7 @@ export const dispatchUserInput = (message: string) => {
 
 export const initializeNewSystemMessage = (message: string) => {
   chatMessages.update((messages) => [...messages, {
-    tokens: [],
+    tokens: [message],
     sender: Sender.System,
   }]);
 }

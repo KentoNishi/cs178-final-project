@@ -1,9 +1,37 @@
 <script lang="ts">
   import { chatMessages } from '../ts/stores';
   import { Sender } from '../ts/types';
-    import { dispatchUserInput } from '../utils/chat';
+    import { dispatchUserInput, addUserInputListener, initializeNewSystemMessage } from '../utils/chat';
 
   let userInputValue = '';
+
+  // Adding input listener to call API upon user input
+  addUserInputListener(async (str) => {
+    fetch("http://127.0.0.1:8000/recommend", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        question: str
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      // For now, just creating new system message with the whole result. Work on streaming to come
+      initializeNewSystemMessage(data.recommendation);
+      console.log(data);
+    })
+    .catch(error => {
+      console.error('Fetch error:', error);
+    });
+  })
+
   const onUserInput = () => {
     if (userInputValue.trim() === '') {
       return;
@@ -84,7 +112,7 @@
     border-top: 1px solid #b0b0b0;
     padding-top: 12px;
   }
-  
+
   .textbox {
     flex: 1;
     padding: 8px 12px;
@@ -92,7 +120,7 @@
     border-right: 0px !important;
     height: 40px;
   }
-  
+
   .send-button {
     padding: 8px 12px;
     border-radius: 0px 20px 20px 0px;

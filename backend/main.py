@@ -13,6 +13,7 @@ from langchain.schema import LLMResult
 from typing import Dict, List, Any
 from queue import Queue
 from threading import Thread
+from fastapi.middleware.cors import CORSMiddleware
 
 
 class CallbackHandler(BaseCallbackHandler):
@@ -43,6 +44,19 @@ message_queue = Queue()
 handler = CallbackHandler(message_queue)
 
 app = FastAPI()
+
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # load OPENAI_API_KEY
 load_dotenv()
@@ -83,6 +97,7 @@ async def recommend_classes(query: Query):
 
 async def response_generator(query):
 
+    print(query)
     # Start a thread that runs the chain
     thread = Thread(target=chain.invoke, kwargs={"query": query})
     thread.start()
@@ -91,6 +106,7 @@ async def response_generator(query):
     while True:
         value = message_queue.get()
         if value == None:
+
             # End of message queue
             thread.join()
             return
