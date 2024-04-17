@@ -1,15 +1,21 @@
 <script lang="ts">
-  import { Sender, type Message } from '../ts/types';
+  import { chatMessages } from '../ts/stores';
+  import { Sender } from '../ts/types';
+    import { dispatchUserInput } from '../utils/chat';
 
-  let messages: Message[] = [{
-    tokens: ['Welcome to the my.harvard ChatGPT assistant! How can I assist you today?'],
-    sender: Sender.System
-  }];
+  let userInputValue = '';
+  const onUserInput = () => {
+    if (userInputValue.trim() === '') {
+      return;
+    }
+    dispatchUserInput(userInputValue);
+    userInputValue = '';
+  };
 </script>
 
 <div class="split-wrapper">
   <div class="message-scroller">
-    {#each messages as message, i}
+    {#each $chatMessages as message, i}
       <div class="message" class:system={message.sender === Sender.System} class:user={message.sender === Sender.User}>
         {#if message.sender === Sender.System}
           <div class="system-message">{message.tokens.join(' ')}</div>
@@ -20,8 +26,12 @@
     {/each}
   </div>
   <div class="message-input">
-    <input type="text" class="textbox" placeholder="Type a message..." />
-    <button class="material-symbols-outlined send-button">send</button>
+    <input type="text" class="textbox" placeholder="Type a message..." bind:value={userInputValue} on:keydown={(e) => {
+      if (e.key === 'Enter') {
+        onUserInput();
+      }
+    }} />
+    <button class="material-symbols-outlined send-button" on:click|preventDefault={onUserInput}>send</button>
   </div>
 </div>
 
@@ -43,12 +53,12 @@
     margin-bottom: 12px;
     display: flex;
     justify-content: flex-start;
-    max-width: 80%;
   }
 
   .message>div {
     padding: 8px 12px;
     border-radius: 12px;
+    max-width: 80%;
   }
 
   .system-message {
@@ -77,7 +87,7 @@
   
   .textbox {
     flex: 1;
-    padding: 8px;
+    padding: 8px 12px;
     border-radius: 20px 0px 0px 20px;
     border-right: 0px !important;
     height: 40px;

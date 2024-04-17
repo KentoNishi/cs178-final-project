@@ -1,5 +1,6 @@
 <script lang="ts">
   import { chatPanelOpen } from '../ts/stores';
+  // @ts-ignore
   import Moveable from 'svelte-moveable';
   import InnerChatInterface from './InnerChatInterface.svelte';
   let target: HTMLElement;
@@ -33,8 +34,8 @@
     opacity: 0;
     transition: opacity 0.3s;
     background-color: white;
-    min-width: 200px;
-    min-height: 200px;
+    min-width: 40 0px;
+    min-height: 40  0px;
     box-shadow: 0 0 16px rgba(0, 0, 0, 0.25);
   }
   .open, :global(.open) {

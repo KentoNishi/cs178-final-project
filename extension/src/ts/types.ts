@@ -7,3 +7,5 @@ export interface Message {
   tokens: string[];
   sender: Sender;
 }
+
+export type ChatInputCallback = (message: string) => void;
