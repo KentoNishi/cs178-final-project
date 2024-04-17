@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { onMount, tick } from 'svelte';
   import { chatMessages } from '../ts/stores';
   import { Sender } from '../ts/types';
-    import { dispatchUserInput, addUserInputListener, initializeNewSystemMessage } from '../utils/chat';
+  import { dispatchUserInput, addUserInputListener, initializeNewSystemMessage } from '../utils/chat';
 
   let userInputValue = '';
 
@@ -39,10 +40,22 @@
     dispatchUserInput(userInputValue);
     userInputValue = '';
   };
+
+  let scrollTarget: HTMLDivElement;
+
+  const scrollToBottom = async () => {
+    await tick();
+    if (scrollTarget) scrollTarget.scrollTop = scrollTarget.scrollHeight;
+  };
+
+  $: if ($chatMessages) {
+    scrollToBottom();
+  }
 </script>
 
 <div class="split-wrapper">
-  <div class="message-scroller">
+  <div class="title">Untitled Chat</div>
+  <div class="message-scroller" bind:this={scrollTarget}>
     {#each $chatMessages as message, i}
       <div class="message" class:system={message.sender === Sender.System} class:user={message.sender === Sender.User}>
         {#if message.sender === Sender.System}
@@ -69,6 +82,11 @@
     flex-direction: column;
     height: 100%;
     padding: 12px 0px 12px 12px;
+  }
+
+  .title {
+    height: 48px;
+    font-weight: bold;
   }
 
   .message-scroller {

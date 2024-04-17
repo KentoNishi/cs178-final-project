@@ -8,10 +8,14 @@
     target.style.width = `${width}px`;
     target.style.height = `${height}px`;
   };
+  let updateRect: any;
 </script>
+
+<svelte:window on:resize={updateRect} />
 
 <div class="bottom-right" class:open={$chatPanelOpen} bind:this={target} style="width: 50%; height: 50%;">
   <InnerChatInterface />
+  <button class="material-symbols-outlined close-button" on:click|preventDefault={() => { $chatPanelOpen = false; }}>close</button>
 </div>
 {#if $chatPanelOpen}
   <Moveable
@@ -22,6 +26,7 @@
     edge
     className={$chatPanelOpen ? 'open' : 'closed'}
     origin={false}
+    bind:updateRect
   />
 {/if}
 
@@ -34,8 +39,8 @@
     opacity: 0;
     transition: opacity 0.3s;
     background-color: white;
-    min-width: 40 0px;
-    min-height: 40  0px;
+    min-width: 400px;
+    min-height: 400px;
     box-shadow: 0 0 16px rgba(0, 0, 0, 0.25);
   }
   .open, :global(.open) {
@@ -43,5 +48,22 @@
   }
   :global(.closed) {
     opacity: 0;
+  }
+  .close-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: white;
+    color: black;
+    border: none;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translate(-3px, 2px);
+    z-index: 1000;
   }
 </style>
