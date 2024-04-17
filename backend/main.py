@@ -69,7 +69,9 @@ class Query(BaseModel):
 # Initialize necessary components
 embedding_function = OpenAIEmbeddings()
 db = Chroma(persist_directory="./chroma_db", embedding_function=embedding_function)
-retriever = db.as_retriever()
+retriever = db.as_retriever(
+    search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.5}
+)
 template = """Answer the question based only on the following context: {context} Question: {question} """
 prompt = ChatPromptTemplate.from_template(template)
 model = ChatOpenAI(verbose=True, streaming=True, callbacks=[handler])
