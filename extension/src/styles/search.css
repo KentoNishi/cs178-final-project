@@ -1,13 +1,28 @@
+:root {
+  --color-primary: #3a72ab;
+}
+
 .bg-primary {
-  background-color: #006dff !important;
+  background-color: var(--color-primary) !important;
+}
+.tooltip {
+  position: absolute;
 }
 @media (max-width: 992px) {
   .isSCL_SearchWrp > a {
     width: 32.5% !important;
   }
+  .tooltip {
+    /* implement later */
+  }
 }
 @media (min-width: 993px) {
   #IS_SCL_SearchTxt {
     width: 50% !important;
+  }
+  .tooltip {
+    left: 175px;
+    top: 8px;
+    color: white;
   }
 }

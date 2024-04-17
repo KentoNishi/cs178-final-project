@@ -1,24 +1,20 @@
 import { getMyHarvardCourseInfo, getMyHarvardRequirements } from '../utils/scraper';
+import Tooltip from '../components/Tooltip.svelte';
 
 (async () => {
   const [courses, requirements] = await Promise.all(
     [getMyHarvardCourseInfo(), getMyHarvardRequirements()]
   );
-  console.log(courses, requirements);
-  const child = document.querySelector('#isSCL_AutoSuggest');
+  const searchBar = document.querySelector('#IS_SCL_SearchTxt');
   const callback = () => {
-    if (!child) return;
-    console.log(child);
+    if (!searchBar) return;
     clearInterval(interval);
-    const newButton = document.createElement('a');
-    newButton.classList.add('HU_SCL_SearchBox');
-    newButton.classList.add('bg-primary');
-    newButton.textContent = 'Search with GPT';
-    newButton.href = '';
-    newButton.addEventListener('click', (event) => {
-      event.preventDefault();
+    const tooltipWrapper = document.createElement('div');
+    tooltipWrapper.classList.add('tooltip');
+    const tooltip = new Tooltip({
+      target: tooltipWrapper,
     });
-    child?.after(newButton);
+    searchBar?.after(tooltipWrapper);
   };
   const interval = setInterval(callback, 100);
 })();
