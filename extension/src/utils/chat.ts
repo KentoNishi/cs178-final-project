@@ -20,7 +20,7 @@ export const dispatchUserInput = (message: string) => {
   });
 }
 
-export const initializeNewSystemMessage = () => {
+export const initializeNewSystemMessage = (message: string) => {
   chatMessages.update((messages) => [...messages, {
     tokens: [message],
     sender: Sender.System,

@@ -45,10 +45,11 @@ handler = CallbackHandler(message_queue)
 
 app = FastAPI()
 
+# TODO: Handle this a little better. This is just to fight CORS issues for the demo when running
+# The backend on localhost
 origins = [
     "*"
 ]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
