@@ -9,7 +9,10 @@ class CustomRetriever(BaseRetriever):
     def get_relevant_documents(self, query):
         # calculate embeddings for query string
         emb = self.embeddings.embed_query(query)
-        option1 = self.chroma.similarity_search_by_vector(embedding=emb)
+        option1 = self.chroma.similarity_search_by_vector(
+            embedding=emb,
+            k=5,
+            kwargs={"score_threshold" : 0.7})
         return option1
     
     async def aget_relevant_documents(self):
