@@ -15,7 +15,7 @@ from queue import Queue
 from threading import Thread
 from fastapi.middleware.cors import CORSMiddleware
 
-from redundant_filter_retriever import RedundantFilterRetriever
+from custom_retriever import CustomRetriever
 
 
 class CallbackHandler(BaseCallbackHandler):
@@ -73,15 +73,18 @@ embedding_function = OpenAIEmbeddings()
 db = Chroma(persist_directory="./chroma_db", embedding_function=embedding_function)
 
 # custom retriever
-retriever = RedundantFilterRetriever(embeddings=embedding_function, chroma=db)
+retriever = CustomRetriever(embeddings=embedding_function, chroma=db)
 
 # retriever = db.as_retriever(
 #     search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.5}
 # )
 
-template = """Answer the question based only on the following context: {context} Question: {question} """
+template = """You are a Chatbot for college course recommendation. 
+You tell details about a course and answer questions. 
+Answer the question based only on the following context: {context} Question: {question}"""
 prompt = ChatPromptTemplate.from_template(template)
 model = ChatOpenAI(verbose=True, streaming=True, callbacks=[handler])
+
 chain = (
     {"context": retriever, "question": RunnablePassthrough()}
     | prompt
