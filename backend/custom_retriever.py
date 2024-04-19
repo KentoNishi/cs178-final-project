@@ -11,8 +11,8 @@ class CustomRetriever(BaseRetriever):
         emb = self.embeddings.embed_query(query)
         option1 = self.chroma.similarity_search_by_vector(
             embedding=emb,
-            k=5,
-            kwargs={"score_threshold" : 0.7})
+            k=6,
+           )
         return option1
     
     async def aget_relevant_documents(self):
