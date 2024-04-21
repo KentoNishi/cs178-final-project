@@ -31,6 +31,14 @@ class VectorDatabase:
         self.client = chromadb.PersistentClient(path=db_path)
 
 
+    def get(self, source: str, ids: list[str]):
+        # Get ChromaDB collection
+        collection = self.client.get_collection(
+            source, embedding_function=self.embedding_function
+        )
+        return collection.get(ids=ids, include=["documents", "metadatas"])
+
+
     def query(self, source: str, query: str, n_results=2, filters={}) -> list[dict]:
         """
         Query a collection/namespace in the vector database.

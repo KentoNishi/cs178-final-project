@@ -26,7 +26,7 @@ class Bot:
     @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(3))
     def gpt_get_completion(self, **kwargs):
         """
-        Wrapper around openai.Completion.create that retries on failure.
+        Wrapper around openai.chat.completions.create that retries on failure.
 
         Returns:
             openai.ChatCompletion: an openai chat completion object.
@@ -84,8 +84,6 @@ class Bot:
       keyword_artifact = self.find_keywords(query)
       context = []
 
-      print(keyword_artifact.get_latest_response())
-
       # If we have any keywords to work with, let's use them
       if (keyword_artifact.get_latest_response()):
 
@@ -101,10 +99,7 @@ class Bot:
         # Restore stdout/stderr to original values
         sys.stdout = old_out
         sys.stderr = old_err
-        print(context)
 
-      # print(keyword_artifact)
-      # print(context)
       return list(filter(lambda x: x["score"] > threshold, context))
 
     def context_to_course_info(self, context):
@@ -174,12 +169,24 @@ class Bot:
 
 vec_db = VectorDatabase(os.path.join(os.path.dirname(__file__), 'vector_db'))
 
-bot = Bot(vector_db=vec_db)
-res = bot.answer_query([
-    {
-      "role": "user",
-      "content": "Please find me a course about data structures and algorithms"
-    }
-  ])
-# print(res.get_latest_prompt())
+print(vec_db.get(source="course_chunks", ids=["117372"]))
+
+
+# {'ids': ['117372'],
+#  'embeddings': None,
+#  'metadatas': [{'text': 'Natural-language-processing applications are ubiquitous: Alexa can set a reminder, or play a particular song, or provide your local weather if you ask; Google Translate can make documents readable across languages; ChatGPT can be prompted to generate convincingly fluent text, which is often even correct. How do such systems work? This course provides an introduction to the field of computational linguistics, the study of human language using the tools and techniques of computer science, with app'}],
+#  'documents': [None],
+#  'uris': None,
+#  'data': None}
+
+# bot = Bot(vector_db=vec_db)
+
+
+# res = bot.answer_query([
+#     {
+#       "role": "user",
+#       "content": "Please tell me about a COMPSCI class that begins with 18"
+#     }
+#   ])
+# # print(res.get_latest_prompt())
 # print(res.get_latest_response())
