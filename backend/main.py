@@ -1,10 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from langchain.prompts import ChatPromptTemplate
-from langchain_chroma import Chroma
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain.agents import OpenAIFunctionsAgent, AgentExecutor
+from langchain.schema import SystemMessage
+from langchain_openai import ChatOpenAI
 from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 import asyncio
@@ -14,8 +13,13 @@ from typing import Dict, List, Any
 from queue import Queue
 from threading import Thread
 from fastapi.middleware.cors import CORSMiddleware
-
-from custom_retriever import CustomRetriever
+from tools.sql import run_query_tool
+from tools.retrieve import retrieval_QA_tool
+from langchain.prompts import (
+    ChatPromptTemplate,
+    HumanMessagePromptTemplate,
+    MessagesPlaceholder,
+)
 
 
 class CallbackHandler(BaseCallbackHandler):
@@ -68,66 +72,74 @@ load_dotenv()
 class Query(BaseModel):
     question: str
 
-# Initialize necessary components
-embedding_function = OpenAIEmbeddings()
-db = Chroma(persist_directory="./chroma_db", embedding_function=embedding_function)
 
-# custom retriever
-retriever = CustomRetriever(embeddings=embedding_function, chroma=db)
+tools = [run_query_tool, retrieval_QA_tool]
 
-# retriever = db.as_retriever(
-#     search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.5}
-# )
 
-template = """You are a Chatbot for college course recommendation. 
-You tell details about a course and answer questions. 
-Answer the question based only on the following context: {context} Question: {question}"""
-prompt = ChatPromptTemplate.from_template(template)
-model = ChatOpenAI(verbose=True, streaming=True, callbacks=[handler])
+prompt = ChatPromptTemplate(
+    messages=[
+        SystemMessage(content=("""
+                               You are a chatbot trained to assist with Harvard college course recommendations. 
+                               Please provide detailed, accurate, and concise responses to the questions asked, 
+                               utilizing the following tools when necessary: {tools}.
+                               For example, when question about metadata is asked, use run_query_tool first. 
+                               When asked about more content realated things, use retrieval_QA_tool.
+                               """
+        )),
+        HumanMessagePromptTemplate.from_template("{input}"),
+        MessagesPlaceholder(variable_name="agent_scratchpad")
+    ]
+)
 
-chain = (
-    {"context": retriever, "question": RunnablePassthrough()}
-    | prompt
-    | model
-    | StrOutputParser()
+model = ChatOpenAI(verbose=True, callbacks=[handler])
+
+agent = OpenAIFunctionsAgent(
+    llm=model,
+    prompt=prompt,
+    tools=tools
+)
+
+agent_executor = AgentExecutor(
+    agent=agent,
+    verbose=True,
+    tools=tools
 )
 
 @app.get("/")
 async def root():
     return {"message": "API for my.harvard chatbot"}
 
-
 @app.post("/recommend")
 async def recommend_classes(query: Query):
     """Non-streaming version"""
     try:
         print(query.question)
-        result = chain.invoke(query.question)
+        result = agent_executor(query.question)
         return {"recommendation": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+# async def response_generator(query):
+
+#     print(query)
+#     # Start a thread that runs the chain
+#     thread = Thread(target=chain.invoke, kwargs={"query": query})
+#     thread.start()
+
+#     # Main thread keeps pulling messages from the queue and yielding them
+#     while True:
+#         value = message_queue.get()
+#         if value == None:
+
+#             # End of message queue
+#             thread.join()
+#             return
+#         yield value
+#         message_queue.task_done()
+#         await asyncio.sleep(0.1)
 
 
-async def response_generator(query):
-
-    print(query)
-    # Start a thread that runs the chain
-    thread = Thread(target=chain.invoke, kwargs={"query": query})
-    thread.start()
-
-    # Main thread keeps pulling messages from the queue and yielding them
-    while True:
-        value = message_queue.get()
-        if value == None:
-
-            # End of message queue
-            thread.join()
-            return
-        yield value
-        message_queue.task_done()
-        await asyncio.sleep(0.1)
-
-
-@app.post('/query-stream/')
-async def stream(query: Query):
-    return StreamingResponse(response_generator(query.question), media_type='text/event-stream', timeout=None)
+# @app.post('/query-stream/')
+# async def stream(query: Query):
+#     return StreamingResponse(response_generator(query.question), media_type='text/event-stream', timeout=None)
