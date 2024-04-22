@@ -5,6 +5,7 @@ import os
 from bs4 import BeautifulSoup
 from collections import defaultdict
 from utils import progbar, load_env
+from textwrap import dedent
 
 # Load backend .env, needed for OpenAI API key
 load_env()
@@ -166,11 +167,68 @@ class Embedder():
     """
     self.__embed_all(self.embed_course_v1, "v1", linear_attributes=linear_attributes)
 
+  def embed_course_v2(self, course, embeddings, kwargs) -> bool:
+    """
+      Embeds a course according to my v1 spec.
+      For each course, creates an embedding for:
+        - 500 char chunks of the courseDescription
+        - Everything in `linear_attributes`
+      and adds it to the dictionary `embeddings` in the list corresponding to the `courseID`.
+    """
+
+    linear_tags = [
+      "termDescription",
+      "catalogSubjectDescription",
+      "courseNumber",
+      "courseTitle",
+      "classLevelAttributeDescription",
+      "divisionalDistribution"
+    ]
+
+    def create_chunks_v2(course, linear_tags):
+      soup = BeautifulSoup(course["courseDescription"], "html.parser")
+      text = soup.get_text()
+
+      # Split the text into chunks of 500 characters and store them in a list called 'chunks'
+      chunks = [text[i:i + 500] for i in range(0, len(text), 500)]
+
+      chunks = list(map(
+        lambda chunk: dedent(f"""\
+          {chunk}
+
+          {','.join([course[tag] if course[tag] else "" for tag in linear_tags])},
+          {','.join(map(lambda instr: instr['instructorName'], course['publishedInstructors']))},
+          {','.join(set().union(*map(lambda pattern: pattern['daysOfWeek'], course['meetings'])))}
+          """),
+        chunks
+      ))
+      return chunks
+
+    chunks = create_chunks_v2(course, linear_tags=linear_tags)
+
+    # Create embeddings for all chunks of course description
+    for chunk in chunks:
+      embeddings[course["courseID"]].append({
+        "embedding": get_embedding(chunk),
+        "text": chunk,
+        "type": "enhancedDescriptionChunk"
+      })
+
+    return True
+
+  def embed_sample_v2(self):
+    self.__embed_sample(self.embed_course_v2, "v2")
+
+  def embed_semester_v2(self):
+    self.__embed_semester(self.embed_course_v2, "spring25", "v2")
+
 embedder = Embedder(
   input_data=DATA,
   output_path=os.path.join(os.path.dirname(__file__), "..", "embeddings"),
   sample_output_path=os.path.join(os.path.dirname(__file__), "..", "embeddings", "samples"),
   client=client
 )
+
+embedder.embed_semester_v2()
 
 # embedder.embed_semester_v1(linear_attributes=LINEAR_EMBEDS, semester="spring25")
