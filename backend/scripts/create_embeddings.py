@@ -1,23 +1,3 @@
-"""
-Generates JSON lines document of the form:
-
-{courseID:
-  [
-    {
-      embedding: [....],
-      text: "...."
-    },
-    {
-      embedding: [....],
-      text: "...."
-    }
-  ]
-}
-{
-  ...
-}
-"""
-
 import json
 from openai import OpenAI
 import sys
@@ -66,7 +46,84 @@ class Embedder():
     self.output_path = output_path
     self.sample_output_path = sample_output_path
 
-  def embed_course_v1(self, course, embeddings, linear_attributes):
+  def __embed_sample(self, course_embedder, version_num: str, **kwargs):
+    """
+      Creates a sample of the embedding system, with one example per input file.
+      Embeds each course using `course_embedder`, and outputs a file named using `version_num`.
+      `kwargs` must contain any attributes that the `course_embedder` needs, else will fail.
+    """
+    for (outname, input_file) in self.input_data.items():
+      embeddings = defaultdict(list)
+      with open(input_file, "r") as f:
+        # All data from file
+        data = json.load(f)
+
+        # Only want one course as a sample
+        course = data["courses"][0]
+
+        course_embedder(course, embeddings, kwargs)
+
+      with open(os.path.join(self.sample_output_path, f"{outname}_{version_num}_sample.jsonl"), "w") as outfile:
+        json.dump(embeddings, outfile)
+
+  def __embed_semester(self, course_embedder, semester: str, version_num: str, **kwargs):
+    """
+      Embeds a semester's worth of data (i.e. an entire input file),
+      making a new `embeddings` variable and dumping it all to a json file
+      with the name `{semester}_v1.json`.
+    """
+    embeddings = defaultdict(list)
+
+    if not (semester in self.input_data):
+      print("Invalid semester key in embed_semester_v1")
+      return
+
+    input_file = self.input_data[semester]
+    with open(input_file, "r") as f:
+      processed = 0
+      data = json.load(f)
+      courses_in_file = len(data["courses"])
+      print(f"There are {courses_in_file} courses for {semester}.")
+
+      for course in data["courses"]:
+        course_embedder(course, embeddings, kwargs)
+        processed += 1
+        progbar(processed, courses_in_file, 20, False)
+
+      print(f"Finished processing {semester} semester")
+
+    # Open a new file 'embeddings.jsonl' in write mode
+    output_path = os.path.join(self.output_path, f"{semester}_{version_num}.json")
+    print("Writing embeddings to file...")
+    with open(output_path, "w") as f:
+      json.dump(embeddings, f)
+
+    print(f"Embeddings written to file {output_path}")
+    return
+
+  def __embed_all(self, course_embedder, version_num: str, **kwargs):
+    """
+      Creates embeddings for all semesters in `input_data`.
+      Calls `course_embedder` to embed each course via `embed_semester`.
+    """
+    for (semester) in self.input_data.keys():
+      self.__embed_semester(course_embedder, semester, version_num, kwargs)
+
+  def embed_course_v1(self, course, embeddings, kwargs) -> bool:
+    """
+      Embeds a course according to my v1 spec.
+      For each course, creates an embedding for:
+        - 500 char chunks of the courseDescription
+        - Everything in `linear_attributes`
+      and adds it to the dictionary `embeddings` in the list corresponding to the `courseID`.
+    """
+
+    if "linear_attributes" not in kwargs:
+      print("Need to pass `linear_attributes` to `embed_course_v1`.")
+      return False
+
+    linear_attributes = kwargs['linear_attributes']
+
     soup = BeautifulSoup(course["courseDescription"], "html.parser")
     text = soup.get_text()
 
@@ -94,91 +151,20 @@ class Embedder():
         print(f"Issue with courseID: {course['courseID']}, {course['courseTitle']}, attribute: {attribute}, value: {course[attribute]}")
         print(e)
 
-    return
+    return True
 
+  def embed_semester_v1(self, semester: str, linear_attributes):
+    self.__embed_semester(self.embed_course_v1, semester, "v1", linear_attributes=linear_attributes)
 
-  def embed_v1_sample(self, linear_attributes):
-    """
-      Creates a sample of the embedding system, with one example per input file.
-    """
-
-    for (outname, input_file) in self.input_data.items():
-      embeddings = defaultdict(list)
-      with open(input_file, "r") as f:
-        # All data from file
-        data = json.load(f)
-
-        # Only want one course as a sample
-        course = data["courses"][0]
-
-        self.embed_course_v1(course, embeddings, linear_attributes)
-
-      with open(os.path.join(self.sample_output_path, f"{outname}_v1_sample.json"), "w") as outfile:
-        json.dump(embeddings, outfile)
-
-  def embed_v1_semester(self, linear_attributes, semester: str):
-    embeddings = defaultdict(list)
-
-    if not (semester in self.input_data):
-      print("Invalid semester key in embed_v1_semester")
-      return
-
-    input_file = self.input_data[semester]
-    with open(input_file, "r") as f:
-      processed = 0
-      data = json.load(f)
-      courses_in_file = len(data["courses"])
-      print("There are {courses_in_file} courses for {semester}.")
-
-      for course in data["courses"]:
-        self.embed_course_v1(course, embeddings, linear_attributes)
-        processed += 1
-        progbar(processed, courses_in_file, 20, False)
-
-      print(f"Finished processing {semester} semester")
-
-    # Open a new file 'embeddings.jsonl' in write mode
-    output_path = os.path.join(self.output_path, f"{semester}_v1.json")
-    print("Writing embeddings to file...")
-    with open(output_path, "w") as f:
-      json.dump(embeddings, f)
-
-    print("Embeddings written to file {output_path}")
-    return
-
+  def embed_sample_v1(self, linear_attributes):
+    self.__embed_sample(self.embed_course_v1, "v1", linear_attributes=linear_attributes)
 
   def embed_v1(self, linear_attributes):
     """
-      Simple embedding system:
-
-
+      Creates embeddings for all semesters in `input_data`.
+      Calls `__embed_all` to embed each semester.
     """
-    # Will store all embeddings for every course!
-    # Maps courseID to list of embeddings for that course, generated from
-    # 1) courseTitle 2) chunks of courseDescription, each 500 chars.
-    embeddings = defaultdict(list)
-
-    # Creating embeddings for all input files
-    for (outname, input_file) in self.input_data.items():
-      with open(input_file, "r") as f:
-        processed = 0
-        data = json.load(f)
-        courses_in_file = len(data["courses"])
-
-
-        for course in data["courses"]:
-          self.embed_course_v1(course, embeddings, linear_attributes)
-          processed += 1
-          progbar(processed, courses_in_file, 20, False)
-
-        print(f"Finished processing data file {input_file}")
-
-      # Open a new file 'embeddings.jsonl' in write mode
-      print("Writing embeddings to file...")
-      with open(EMBEDDING_FILE, "w") as f:
-        json.dump(embeddings, f)
-
-      print("Embeddings written to file 'embeddings.jsonl'")
+    self.__embed_all(self.embed_course_v1, "v1", linear_attributes=linear_attributes)
 
 embedder = Embedder(
   input_data=DATA,
@@ -187,4 +173,4 @@ embedder = Embedder(
   client=client
 )
 
-embedder.embed_v1_semester(linear_attributes=LINEAR_EMBEDS, semester="spring25")
+# embedder.embed_semester_v1(linear_attributes=LINEAR_EMBEDS, semester="spring25")
