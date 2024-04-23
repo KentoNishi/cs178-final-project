@@ -20,7 +20,7 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
     MessagesPlaceholder,
 )
-
+from langchain.memory import ConversationBufferMemory, ConversationBufferWindowMemory
 
 class CallbackHandler(BaseCallbackHandler):
     """Callback handler class to give Kento the hooks he wants."""
@@ -86,10 +86,13 @@ prompt = ChatPromptTemplate(
                                When asked about more content realated things, use retrieval_QA_tool.
                                """
         )),
+        MessagesPlaceholder(variable_name="chat_history"),
         HumanMessagePromptTemplate.from_template("{input}"),
         MessagesPlaceholder(variable_name="agent_scratchpad")
     ]
 )
+
+memory = ConversationBufferWindowMemory(memory_key="chat_history", return_messages=True, k=4)
 
 model = ChatOpenAI(verbose=True, callbacks=[handler])
 
@@ -102,8 +105,10 @@ agent = OpenAIFunctionsAgent(
 agent_executor = AgentExecutor(
     agent=agent,
     verbose=True,
-    tools=tools
+    tools=tools,
+    memory=memory
 )
+
 
 @app.get("/")
 async def root():
@@ -115,7 +120,7 @@ async def recommend_classes(query: Query):
     try:
         print(query.question)
         result = agent_executor(query.question)
-        return {"recommendation": result}
+        return {"recommendation": result['output']}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
