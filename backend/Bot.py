@@ -105,12 +105,7 @@ class Bot:
     def context_to_course_info(self, context):
       with sqlite3.connect("courses.db") as con:
         cur = con.cursor()
-        # print(context)
-        # print(context)
         ids = [str(x["metadata"]["courseID"]) for x in context]
-        # print("IDS")
-        # print(ids)
-
         # Using string formatting to create the query with the correct number of placeholders
         query = """
             SELECT courseNumber, courseTitle, courseDescription, publishedInstructors, meetings
@@ -120,8 +115,6 @@ class Bot:
 
         # Execute the query with the list of IDs as a parameter
         results = cur.execute(query, ids).fetchall()
-        # print(results)
-        # sys.exit(1)
         return results
 
 
@@ -186,4 +179,4 @@ while not (user_input := input("Input: ")) in ["q", "Q", "QUIT", "quit", "Quit"]
   ])
   print(res.get_latest_response())
   # print(res.get_latest_prompt())
-  print(res.get_references())
+  # print(res.get_references())
