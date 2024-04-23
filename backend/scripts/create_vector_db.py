@@ -37,11 +37,13 @@ except ValueError:
   course_collection = chroma_client.create_collection(name=CONFIG.collection_name, embedding_function=embedding_function)
 
 # Add all the embeddings!
+embedding_id = 0
 for courseID, course_data in df.iterrows():
   embedding_data = course_data[0]
   for chunk in embedding_data:
     course_collection.add(
-      ids = [str(courseID)],
+      ids = [str(embedding_id)],
       embeddings = chunk["embedding"],
-      metadatas = [{"text": chunk["text"]}]
+      metadatas = [{"text": chunk["text"], "type": chunk["type"], "courseID": courseID}]
     )
+    embedding_id += 1

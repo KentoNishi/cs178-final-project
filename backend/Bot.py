@@ -105,7 +105,11 @@ class Bot:
     def context_to_course_info(self, context):
       with sqlite3.connect("courses.db") as con:
         cur = con.cursor()
-        ids = [x["id"] for x in context]
+        # print(context)
+        # print(context)
+        ids = [str(x["metadata"]["courseID"]) for x in context]
+        # print("IDS")
+        # print(ids)
 
         # Using string formatting to create the query with the correct number of placeholders
         query = """
@@ -116,6 +120,8 @@ class Bot:
 
         # Execute the query with the list of IDs as a parameter
         results = cur.execute(query, ids).fetchall()
+        # print(results)
+        # sys.exit(1)
         return results
 
 
@@ -144,7 +150,7 @@ class Bot:
       if context:
         prompt = dedent(f"""\
           You are a university course search assistant. The following context may help you answer the user query. If it does not help, you can ignore it.
-          Previous messages and contexts may also help you answer the following query.
+          Previous messages and contexts may also help you answer the following query. You should NOT make up any courses that you don't know.
 
           Context: ```
           {info}
@@ -164,29 +170,20 @@ class Bot:
 
       response = self.gpt_get_completion(messages=messages, model="gpt-4-turbo", temperature=0, user="anon")
 
-      return Artifact(query_message=query, prompt=prompt, response=response, references=[])
+      return Artifact(query_message=query, prompt=prompt, response=response, references=[context])
 
 
 vec_db = VectorDatabase(os.path.join(os.path.dirname(__file__), 'vector_db'))
 
-print(vec_db.get(source="course_chunks", ids=["117372"]))
+bot = Bot(vector_db=vec_db)
 
-
-# {'ids': ['117372'],
-#  'embeddings': None,
-#  'metadatas': [{'text': 'Natural-language-processing applications are ubiquitous: Alexa can set a reminder, or play a particular song, or provide your local weather if you ask; Google Translate can make documents readable across languages; ChatGPT can be prompted to generate convincingly fluent text, which is often even correct. How do such systems work? This course provides an introduction to the field of computational linguistics, the study of human language using the tools and techniques of computer science, with app'}],
-#  'documents': [None],
-#  'uris': None,
-#  'data': None}
-
-# bot = Bot(vector_db=vec_db)
-
-
-# res = bot.answer_query([
-#     {
-#       "role": "user",
-#       "content": "Please tell me about a COMPSCI class that begins with 18"
-#     }
-#   ])
-# # print(res.get_latest_prompt())
-# print(res.get_latest_response())
+while not (user_input := input("Input: ")) in ["q", "Q", "QUIT", "quit", "Quit"]:
+  res = bot.answer_query([
+    {
+      "role": "user",
+      "content": user_input
+    }
+  ])
+  print(res.get_latest_response())
+  # print(res.get_latest_prompt())
+  print(res.get_references())

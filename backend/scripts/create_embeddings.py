@@ -7,7 +7,8 @@ from collections import defaultdict
 from utils import progbar, load_env
 from textwrap import dedent
 
-# Load backend .env, needed for OpenAI API key
+# Load backend .env, needed for OpenAI API key.
+# NOTE: Might need to remove in Docker environment, or might just be redundant.
 load_env()
 
 # Initialize the OpenAI client
@@ -186,19 +187,35 @@ class Embedder():
     ]
 
     def create_chunks_v2(course, linear_tags):
+      """
+        Creates what I've called `enchancedDescriptionChunks` from a `courseDescription`.
+        Again, split by 500 chars, but the enchaned chunk is that chunk, but with added
+        info about the course.
+         -> Everything in `linear_tags` is included after the chunk, comma separated.
+         -> Then the name of the instructors are added on the next line.
+         -> Finally, any meeting days are put on the final line.
+
+        The aim is to tackle queries that provide info on multiple axes and provide better results,
+        e.g. the query 'I want a Computer Science course that meets on Mondays', now
+        `Computer Science` and `Monday` should both appear in the same chunk, hence the same embedding,
+        and hopefully will more reliably find relevant courses.
+      """
       soup = BeautifulSoup(course["courseDescription"], "html.parser")
       text = soup.get_text()
 
-      # Split the text into chunks of 500 characters and store them in a list called 'chunks'
       chunks = [text[i:i + 500] for i in range(0, len(text), 500)]
 
+      # some meetings are just like 'TBA' - this aims to ignore these, otherwise this keeps
+      # all unique days the class meets upon (ignores times for now)
       chunks = list(map(
         lambda chunk: dedent(f"""\
           {chunk}
 
           {','.join([course[tag] if course[tag] else "" for tag in linear_tags])},
           {','.join(map(lambda instr: instr['instructorName'], course['publishedInstructors']))},
-          {','.join(set().union(*map(lambda pattern: pattern['daysOfWeek'], course['meetings'])))}
+          {','.join(set().union(
+            *map(lambda pattern: [] if isinstance(pattern, str) else pattern['daysOfWeek'], course['meetings'])
+            ))}
           """),
         chunks
       ))
@@ -206,7 +223,7 @@ class Embedder():
 
     chunks = create_chunks_v2(course, linear_tags=linear_tags)
 
-    # Create embeddings for all chunks of course description
+    # Create embeddings for all (enhanced) chunks
     for chunk in chunks:
       embeddings[course["courseID"]].append({
         "embedding": get_embedding(chunk),
@@ -230,5 +247,3 @@ embedder = Embedder(
 )
 
 embedder.embed_semester_v2()
-
-# embedder.embed_semester_v1(linear_attributes=LINEAR_EMBEDS, semester="spring25")
