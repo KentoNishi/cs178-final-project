@@ -236,8 +236,8 @@ class Embedder():
   def embed_sample_v2(self):
     self.__embed_sample(self.embed_course_v2, "v2")
 
-  def embed_semester_v2(self):
-    self.__embed_semester(self.embed_course_v2, "spring25", "v2")
+  def embed_semester_v2(self, semester: str):
+    self.__embed_semester(self.embed_course_v2, semester, "v2")
 
 embedder = Embedder(
   input_data=DATA,
@@ -246,4 +246,4 @@ embedder = Embedder(
   client=client
 )
 
-embedder.embed_semester_v2()
+embedder.embed_semester_v2("fall24")
