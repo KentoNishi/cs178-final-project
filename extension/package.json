@@ -20,6 +20,7 @@
         "webextension-polyfill": "^0.10.0"
     },
     "dependencies": {
+        "svelte-markdown": "^0.4.1",
         "svelte-moveable": "^0.45.0"
     }
 }

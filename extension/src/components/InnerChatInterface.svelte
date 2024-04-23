@@ -3,6 +3,7 @@
   import { chatMessages } from '../ts/stores';
   import { Sender } from '../ts/types';
   import { dispatchUserInput, addUserInputListener, initializeNewSystemMessage } from '../utils/chat';
+  import SvelteMarkdown from 'svelte-markdown';
 
   let userInputValue = '';
 
@@ -59,7 +60,9 @@
     {#each $chatMessages as message, i}
       <div class="message" class:system={message.sender === Sender.System} class:user={message.sender === Sender.User}>
         {#if message.sender === Sender.System}
-          <div class="system-message">{message.tokens.join('')}</div>
+          <div class="system-message">
+            <SvelteMarkdown source={message.tokens.join('')} />
+          </div>
         {:else}
           <div class="user-message">{message.tokens.join('')}</div>
         {/if}
@@ -114,6 +117,11 @@
     background-color: var(--color-primary);
     color: white;
     float: left;
+    white-space: pre-wrap;
+  }
+
+  :global(ul, ol) {
+    margin: 1rem;
   }
 
   .user-message {
