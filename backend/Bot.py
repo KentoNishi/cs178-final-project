@@ -186,14 +186,26 @@ if __name__ == "__main__":
   vec_db = VectorDatabase(os.path.join(os.path.dirname(__file__), 'vector_db'))
   bot = Bot(vector_db=vec_db)
 
+  prev_messages = []
   # Loop until 'quit' input to ask questions and get responses
   while not (user_input := input("Input: ")) in ["q", "Q", "QUIT", "quit", "Quit"]:
-    res = bot.answer_query([
-      {
-        "role": "user",
-        "content": user_input
+    res = bot.answer_query(
+      query=user_input,
+      prev_messages=prev_messages,
+      filters={
+        "num_embeds": 5,
+        "catalogSubject": "",
+        "termDescription": ""
       }
-    ])
-    print(f"Response:\n{res.get_latest_response()}")
+    )
+
+    # Setup previous messages post-response
+    prev_messages = []
+    for prom, resp in zip(res.prompts, res.response_contents):
+      prev_messages.append(bot.user_message(prom))
+      prev_messages.append(bot.assistant_message(resp))
+    res.set_answer(res.get_latest_response())
+
+    print(f"Response:\n{res.get_answer()}")
   # print(res.get_latest_prompt())
   # print(res.get_references())

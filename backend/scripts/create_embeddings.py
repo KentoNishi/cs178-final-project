@@ -109,7 +109,7 @@ class Embedder():
       Calls `course_embedder` to embed each course via `embed_semester`.
     """
     for (semester) in self.input_data.keys():
-      self.__embed_semester(course_embedder, semester, version_num, kwargs)
+      self.__embed_semester(course_embedder, semester, version_num, **kwargs)
 
   def embed_course_v1(self, course, embeddings, kwargs) -> bool:
     """
@@ -147,7 +147,9 @@ class Embedder():
           embeddings[course["courseID"]].append({
             "embeddings": get_embedding(str(course[attribute])),
             "text": course[attribute],
-            "type": attribute
+            "type": attribute,
+            "courseNumber": course["courseNumber"],   # Putting these two in the metadata directly so that
+            "courseTitle": course["courseTitle"]      # it's easy to send to client for explainability
           })
       except Exception as e:
         print(f"Issue with courseID: {course['courseID']}, {course['courseTitle']}, attribute: {attribute}, value: {course[attribute]}")
@@ -170,10 +172,13 @@ class Embedder():
 
   def embed_course_v2(self, course, embeddings, kwargs) -> bool:
     """
-      Embeds a course according to my v1 spec.
+      Embeds a course according to my v2 spec.
       For each course, creates an embedding for:
-        - 500 char chunks of the courseDescription
-        - Everything in `linear_attributes`
+        - Every enchancedCourseDescription chunk. These chunks are formed by:
+          -> Chunking the courseDescription into 500 char chunks
+          -> Appending data from other fields to the bottom of the chunk
+          -> The `linear_tags` are linearly just copied in.
+          -> `meetings` and `publishedInstructors` requires a little more work.
       and adds it to the dictionary `embeddings` in the list corresponding to the `courseID`.
     """
 
@@ -228,10 +233,95 @@ class Embedder():
       embeddings[course["courseID"]].append({
         "embedding": get_embedding(chunk),
         "text": chunk,
-        "type": "enhancedDescriptionChunk"
+        "type": "enhancedDescriptionChunk",
+        "courseNumber": course["courseNumber"],   # Putting these two in the metadata directly so that
+        "courseTitle": course["courseTitle"]      # it's easy to send to client for explainability
       })
 
     return True
+
+  def embed_course_v3(self, course, embeddings, kwargs) -> bool:
+    """
+      Embeds a course according to my v3 spec.
+
+      This is the same as the V2 spec EXCEPT we add in more metadata, to allow for deterministic filtering
+      alongside the embedding search.
+
+      For each course, creates an embedding for:
+        - Every enchancedCourseDescription chunk. These chunks are formed by:
+          -> Chunking the courseDescription into 500 char chunks
+          -> Appending data from other fields to the bottom of the chunk
+          -> The `linear_tags` are linearly just copied in.
+          -> `meetings` and `publishedInstructors` requires a little more work.
+      and adds it to the dictionary `embeddings` in the list corresponding to the `courseID`.
+    """
+
+
+    linear_tags = [
+      "termDescription",
+      "catalogSubjectDescription",
+      "courseNumber",
+      "courseTitle",
+      "classLevelAttributeDescription",
+      "divisionalDistribution"
+    ]
+
+    def create_chunks_v2(course, linear_tags):
+      """Same chunking system as `embed_course_v2`."""
+      soup = BeautifulSoup(course["courseDescription"], "html.parser")
+      text = soup.get_text()
+
+      chunks = [text[i:i + 500] for i in range(0, len(text), 500)]
+
+      # some meetings are just like 'TBA' - this aims to ignore these, otherwise this keeps
+      # all unique days the class meets upon (ignores times for now)
+      chunks = list(map(
+        lambda chunk: dedent(f"""\
+          {chunk}
+
+          {','.join([course[tag] if course[tag] else "" for tag in linear_tags])},
+          {','.join(map(lambda instr: instr['instructorName'], course['publishedInstructors']))},
+          {','.join(set().union(
+            *map(lambda pattern: [] if isinstance(pattern, str) else pattern['daysOfWeek'], course['meetings'])
+            ))}
+          """),
+        chunks
+      ))
+      return chunks
+
+    chunks = create_chunks_v2(course, linear_tags=linear_tags)
+
+    # Create embeddings for all (enhanced) chunks
+    for chunk in chunks:
+      embeddings[course["courseID"]].append({
+        "embedding": get_embedding(chunk),        # Need the embedding!
+        "text": chunk,                            # The actual text used to generate the embedding (mostly for debugging)
+        "type": "enhancedDescriptionChunk",       # Type, for embedding systems with more than one embedding type, or if we add systems
+                                                  # to be able to search only via one type (e.g. you can toggle to only search courseTitles etc.)
+
+        "courseNumber": course["courseNumber"],   # Used for explainability of results -> AI guidelines
+        "courseTitle": course["courseTitle"],      # Used for explainability of results -> AI guidelines
+
+        # Providing data to be used for FILTERING
+        "termDescription": course["termDescription"],
+        "catalogSubject": course["catalogSubject"],
+        "classLevelAttributeDescription": course["classLevelAttributeDescription"],
+        "crossRegistrationEligibleAttribute": course["crossRegistrationEligibleAttribute"],
+        "divisionalDistribution": course["divisionalDistribution"],
+        "quantitativeReasoning": course["quantitativeReasoning"],
+        "meetings": course["meetings"]
+      })
+
+    return True
+
+  def embed_sample_v3(self):
+    self.__embed_sample(self.embed_course_v3, "v3")
+
+  def embed_semester_v3(self, semester: str):
+    self.__embed_semester(self.embed_course_v3, semester, "v3")
+
+  def embed_v3(self):
+    self.__embed_all(self.embed_course_v3, "v3")
 
   def embed_sample_v2(self):
     self.__embed_sample(self.embed_course_v2, "v2")
@@ -246,4 +336,4 @@ embedder = Embedder(
   client=client
 )
 
-embedder.embed_semester_v2("fall24")
+embedder.embed_v3()
