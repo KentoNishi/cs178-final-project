@@ -118,9 +118,7 @@ class Bot:
         return results
 
 
-    def answer_query(self, messages: list[dict[str, str]]):
-      query = messages.pop()["content"]
-
+    def answer_query(self, query: str, prev_messages: list[dict[str, str]]):
       context = self.retrieve_context(query)
 
       info = self.context_to_course_info(context)
@@ -129,7 +127,8 @@ class Bot:
         You are a university course search assistant. Your goal is to help students find courses offered at the university that interest them.
         You have access to the course titles and descriptions of every course, but nothing more currently. If students ask
         about course times, links to websites or other details, you should answer that you aren't currently able to assist with their query,
-        as your knowledge is limited to course titles and descriptions.
+        as your knowledge is limited to course titles and descriptions. For questions about GENED classes, you should recommend the questioner
+        to look at the GENED website instead, as the data does not have GENED categories.
       """)
 
       prompt = dedent(f"""\
@@ -140,7 +139,7 @@ class Bot:
           {query}
           ```
         """)
-      if context:
+      if info:
         prompt = dedent(f"""\
           You are a university course search assistant. The following context may help you answer the user query. If it does not help, you can ignore it.
           Previous messages and contexts may also help you answer the following query. You should NOT make up any courses that you don't know.
@@ -155,28 +154,32 @@ class Bot:
           """)
 
 
-      messages = [
+      prev_messages = [
         self.system_message(sys_role),
-        *messages,
+        *prev_messages,
         self.user_message(prompt)
       ]
 
-      response = self.gpt_get_completion(messages=messages, model="gpt-4-turbo", temperature=0, user="anon")
+      response = self.gpt_get_completion(messages=prev_messages, model="gpt-4-turbo", temperature=0, user="anon")
 
-      return Artifact(query_message=query, prompt=prompt, response=response, references=[context])
+      artifact = Artifact(query_message=query, prompt=prompt, response=response, references=info)
+      artifact.set_answer(artifact.get_latest_response())
 
+      return artifact
 
-vec_db = VectorDatabase(os.path.join(os.path.dirname(__file__), 'vector_db'))
+# Playground to test Bot upon running script as main
+if __name__ == "__main__":
+  vec_db = VectorDatabase(os.path.join(os.path.dirname(__file__), 'vector_db'))
+  bot = Bot(vector_db=vec_db)
 
-bot = Bot(vector_db=vec_db)
-
-while not (user_input := input("Input: ")) in ["q", "Q", "QUIT", "quit", "Quit"]:
-  res = bot.answer_query([
-    {
-      "role": "user",
-      "content": user_input
-    }
-  ])
-  print(res.get_latest_response())
+  # Loop until 'quit' input to ask questions and get responses
+  while not (user_input := input("Input: ")) in ["q", "Q", "QUIT", "quit", "Quit"]:
+    res = bot.answer_query([
+      {
+        "role": "user",
+        "content": user_input
+      }
+    ])
+    print(f"Response:\n{res.get_latest_response()}")
   # print(res.get_latest_prompt())
   # print(res.get_references())

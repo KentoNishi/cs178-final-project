@@ -9,3 +9,12 @@ export interface Message {
 }
 
 export type ChatInputCallback = (message: string) => void;
+
+export interface ArtifactContent {
+  query_message     : string;
+  prompts           : string[];
+  response_objects  : string[];
+  response_contents : string[];
+  references        : string[][];
+  answer            : string;
+}

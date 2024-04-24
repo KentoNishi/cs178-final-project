@@ -1,21 +1,31 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { chatMessages } from '../ts/stores';
-  import { Sender } from '../ts/types';
+  import { Sender, type ArtifactContent } from '../ts/types';
   import { dispatchUserInput, addUserInputListener, initializeNewSystemMessage } from '../utils/chat';
 
   let userInputValue = '';
+  let artifact : ArtifactContent = {
+    query_message     : "",
+    prompts           : [],
+    response_objects  : [],
+    response_contents : [],
+    references        : [],
+    answer            : ""
+  };
+
 
   // Adding input listener to call API upon user input
   addUserInputListener(async (str) => {
+    artifact.query_message = str;
+    // console.log(JSON.stringify(artifact));
+
     fetch("http://127.0.0.1:8000/recommend", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        question: str
-      })
+      body: JSON.stringify(artifact)
     })
     .then(response => {
       if (!response.ok) {
@@ -25,8 +35,10 @@
     })
     .then(data => {
       // For now, just creating new system message with the whole result. Work on streaming to come
-      initializeNewSystemMessage(data.recommendation);
+      artifact = data;
+
       console.log(data);
+      initializeNewSystemMessage(data.answer);
     })
     .catch(error => {
       console.error('Fetch error:', error);
@@ -37,6 +49,7 @@
     if (userInputValue.trim() === '') {
       return;
     }
+
     dispatchUserInput(userInputValue);
     userInputValue = '';
   };
