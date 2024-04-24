@@ -102,7 +102,10 @@ Some additional context which may be useful as a Harvard-specific chatbot:
 - If a course search does not yield any results, try again with slightly different phrasing, abbreviations, or wording.
 - If a course search seems to yield inaccurate results, try again but expand out abbreviations or use more general terms at your discretion.
 
-IMPORTANT: DO NOT EVER output information about a course which is false or misleading. Always double-check any information you provide to the user by executing queries using the tools provided.
+IMPORTANT:
+DO NOT EVER output information about a course which is false or misleading.
+Before mentioning a course, check that it actually exists with an extra query in the database.
+At the same time, if you can't find a relevant course, change your queries and keep trying. If you are still unable to find the course, communicate that to the user.
 """)
 
 prompt = ChatPromptTemplate(
@@ -145,7 +148,11 @@ async def recommend_classes(query: Query):
         return {"recommendation": result['output']}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+@app.post("/reset-agent")
+async def reset_agent():
+    agent_executor.memory.clear()
+    return {"message": "Agent reset"}
 
 # async def response_generator(query):
 
