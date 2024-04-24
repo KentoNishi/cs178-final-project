@@ -7,7 +7,7 @@ from typing import Dict, List, Any
 from queue import Queue
 from threading import Thread
 from fastapi.middleware.cors import CORSMiddleware
-from Bot import Bot
+from Bot import Bot, Filters
 from VectorDatabase import VectorDatabase
 import os
 from Artifact import Artifact
@@ -39,8 +39,9 @@ class ArtifactContent(BaseModel):
   references        : list[list[str]]
   answer            : str
 
-# class Query(BaseModel):
-#   artifact : Artifact
+class ClientMessage(BaseModel):
+  artifact : ArtifactContent
+  filters  : Filters
 
 class Server:
   def __init__(self, bot: Bot):
@@ -48,18 +49,16 @@ class Server:
     self.router = APIRouter()
     self.router.add_api_route("/recommend", self.recommend, methods=["POST"])
 
-  def recommend(self, query : ArtifactContent):
+  def recommend(self, query : ClientMessage) -> Artifact:
 
+    artifact = query.artifact
     # Reconstruct messages from what's was sent
     prev_messages = []
-    for prompt, resp in zip(query.prompts, query.response_contents):
+    for prompt, resp in zip(artifact.prompts, artifact.response_contents):
       prev_messages.append(bot.user_message(prompt))
       prev_messages.append(bot.assistant_message(resp))
 
-    # if not query.artifact.query_message:
-    #   return { "status": "ERR: No query message" }
-
-    return self.bot.answer_query(query=query.query_message, prev_messages=prev_messages)
+    return self.bot.answer_query(query=artifact.query_message, prev_messages=prev_messages, filters=query.filters)
 
 
 vec_db = VectorDatabase(db_path=os.path.join(os.path.dirname(__file__), "vector_db"))

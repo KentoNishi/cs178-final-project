@@ -9,7 +9,13 @@ from textwrap import dedent
 import sqlite3
 import sys
 import io
+from typing import TypedDict
 
+Filters = TypedDict('Filters', {
+  'num_embeds'     : int,
+  'termDescription': str,
+  'catalogSubject' : str
+})
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -80,7 +86,8 @@ class Bot:
 
         return Artifact(query_message=query, prompt=prompt, response=response, references=[])
 
-    def retrieve_context(self, query, n_results=3, threshold=0.6):
+    def retrieve_context(self, query, filters : Filters, threshold = 0.6):
+
       keyword_artifact = self.find_keywords(query)
       context = []
 
@@ -94,7 +101,14 @@ class Bot:
         sys.stdout = temp_out
         sys.stderr = temp_out
 
-        context = self.vector_db.query(source="course_chunks", query=keyword_artifact.get_latest_response(), n_results=n_results, filters={})
+        context = self.vector_db.query(
+          source        = "course_chunks",
+          query         = keyword_artifact.get_latest_response(),
+          n_results     = filters["num_embeds"],
+          # TODO: Add filters here if they are actual filter values rather than none or empty strings
+          filters       = {
+          }
+        )
 
         # Restore stdout/stderr to original values
         sys.stdout = old_out
@@ -118,8 +132,8 @@ class Bot:
         return results
 
 
-    def answer_query(self, query: str, prev_messages: list[dict[str, str]]):
-      context = self.retrieve_context(query)
+    def answer_query(self, query: str, prev_messages: list[dict[str, str]], filters: Filters):
+      context = self.retrieve_context(query, filters)
 
       info = self.context_to_course_info(context)
 

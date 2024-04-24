@@ -18,3 +18,14 @@ export interface ArtifactContent {
   references        : string[][];
   answer            : string;
 }
+
+export interface Filters {
+  "num_embeds"      : number,
+  "termDescription" : string,
+  "catalogSubject"  : string
+}
+
+export interface ClientMessage {
+  artifact: ArtifactContent,
+  filters: Filters
+}

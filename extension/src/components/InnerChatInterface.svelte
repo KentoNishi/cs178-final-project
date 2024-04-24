@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { chatMessages } from '../ts/stores';
-  import { Sender, type ArtifactContent } from '../ts/types';
+  import { Sender, type ArtifactContent, type ClientMessage } from '../ts/types';
   import { dispatchUserInput, addUserInputListener, initializeNewSystemMessage } from '../utils/chat';
 
   let userInputValue = '';
@@ -18,14 +18,28 @@
   // Adding input listener to call API upon user input
   addUserInputListener(async (str) => {
     artifact.query_message = str;
-    // console.log(JSON.stringify(artifact));
+
+    const client_message : ClientMessage = {
+      artifact: artifact,
+      filters: {
+        // TODO: Use these properly from the UI
+        // I think num_embeds should be a dropdown or small 3 buttons with only one selectable at once with opts 3, 5, 10
+        // termDescription and catalogSubject (think we should add ~2 more) would be dropdowns
+        // I think the content for these should be established via a 'handshake' API call to the backend to populate these upon page load
+        "num_embeds": 3,
+        "termDescription": "",
+        "catalogSubject": ""
+      }
+    };
 
     fetch("http://127.0.0.1:8000/recommend", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(artifact)
+      body: JSON.stringify(
+        client_message
+      )
     })
     .then(response => {
       if (!response.ok) {
