@@ -26,6 +26,9 @@ if (CONFIG.reset_db):
       print("Vector database failed to reset properly")
       sys.exit(1)
 
+def safe_str(maybe_str):
+  return maybe_str if maybe_str else ""
+
 embedding_id = 0
 # Bringing in the data
 for file in CONFIG.embeddings_files:
@@ -44,6 +47,27 @@ for file in CONFIG.embeddings_files:
       course_collection.add(
         ids = [str(embedding_id)],
         embeddings = chunk["embedding"],
-        metadatas = [{"text": chunk["text"], "type": chunk["type"], "courseID": courseID}]
+        metadatas = [{
+          "text": chunk["text"],
+          "type": chunk["type"],
+
+          # To identify course, to be able to find other data via SQL
+          "courseID": courseID,
+
+          # To quickly have these for explainability without needing SQL query
+          "courseNumber": chunk["courseNumber"],
+          "courseTitle":  chunk["courseTitle"],
+
+          # For filtering
+          "termDescription":                      safe_str(chunk["termDescription"]),
+          "catalogSubject":                       safe_str(chunk["catalogSubject"]),
+          "classLevelAttributeDescription":       safe_str(chunk["classLevelAttributeDescription"]),
+          "crossRegistrationEligibleAttribute":   safe_str(chunk["crossRegistrationEligibleAttribute"]),
+          "divisionalDistribution":               safe_str(chunk["divisionalDistribution"]),
+          "quantitativeReasoning":                safe_str(chunk["quantitativeReasoning"]),
+
+          # TODO: Handle formatting the meetings in a better way to be able to filter by these effectively
+          # "meetings": chunk["meetings"]
+        }]
       )
       embedding_id += 1
