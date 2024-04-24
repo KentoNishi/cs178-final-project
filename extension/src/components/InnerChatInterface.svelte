@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { chatMessages } from '../ts/stores';
-  import { Sender } from '../ts/types';
+  import { chatMessages, backendState } from '../ts/stores';
+  import { BackendState, Sender } from '../ts/types';
+  import { SyncLoader } from 'svelte-loading-spinners';
   import { dispatchUserInput, addUserInputListener, initializeNewSystemMessage } from '../utils/chat';
   import SvelteMarkdown from 'svelte-markdown';
 
@@ -9,6 +10,7 @@
 
   // Adding input listener to call API upon user input
   addUserInputListener(async (str) => {
+    backendState.set(BackendState.Generating);
     fetch("http://127.0.0.1:8000/recommend", {
       method: 'POST',
       headers: {
@@ -20,16 +22,20 @@
     })
     .then(response => {
       if (!response.ok) {
+        backendState.set(BackendState.Error);
         throw new Error('Network response was not ok');
       }
+      backendState.set(BackendState.Default);
       return response.json();
     })
     .then(data => {
+      backendState.set(BackendState.Default);
       // For now, just creating new system message with the whole result. Work on streaming to come
       initializeNewSystemMessage(data.recommendation);
       console.log(data);
     })
     .catch(error => {
+      backendState.set(BackendState.Error);
       console.error('Fetch error:', error);
     });
   })
@@ -68,6 +74,13 @@
         {/if}
       </div>
     {/each}
+    {#if $backendState === BackendState.Generating}
+      <div class="message">
+        <div class="system-message" style="transform: scale({24 / 60});">
+          <SyncLoader color="#FFFFFF" size="60" unit="px" />
+        </div>
+      </div>
+    {/if}
   </div>
   <div class="message-input">
     <input type="text" class="textbox" placeholder="Type a message..." bind:value={userInputValue} on:keydown={(e) => {
@@ -118,6 +131,7 @@
     color: white;
     float: left;
     white-space: pre-wrap;
+    transform-origin: top left;
   }
 
   :global(ul, ol) {

@@ -9,3 +9,8 @@ export interface Message {
 }
 
 export type ChatInputCallback = (message: string) => void;
+export enum BackendState {
+  Generating = "generating",
+  Default = "default",
+  Error = "error",
+};
