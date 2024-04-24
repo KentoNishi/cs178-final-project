@@ -86,6 +86,12 @@ class Bot:
 
         return Artifact(query_message=query, prompt=prompt, response=response, references=[])
 
+    def __clean_filters(self, filters : Filters):
+      """Creates a dictionary of filters only if they are valid/non-empty/non-default."""
+      return {
+        k : v for k, v in filters.items() if k != "num_embeds" and v
+      }
+
     def retrieve_context(self, query, filters : Filters, threshold = 0.6):
 
       keyword_artifact = self.find_keywords(query)
@@ -106,8 +112,7 @@ class Bot:
           query         = keyword_artifact.get_latest_response(),
           n_results     = filters["num_embeds"],
           # TODO: Add filters here if they are actual filter values rather than none or empty strings
-          filters       = {
-          }
+          filters       = self.__clean_filters(filters=filters)
         )
 
         # Restore stdout/stderr to original values
@@ -194,7 +199,7 @@ if __name__ == "__main__":
       prev_messages=prev_messages,
       filters={
         "num_embeds": 5,
-        "catalogSubject": "",
+        "catalogSubject": "GOV",
         "termDescription": ""
       }
     )
