@@ -75,16 +75,19 @@ class Query(BaseModel):
 
 tools = [run_query_tool, retrieval_QA_tool]
 
+with open("../extension/src/assets/welcome.md") as f:
+    welcome_message = f.read()
 
-prompt = ChatPromptTemplate(
-    messages=[
-        SystemMessage(content=("""You are an LLM agent assiting students in searching courses on my.harvard (the system Harvard students use for finding courses).
+system_prompt = ("""You are an LLM agent assiting students in searching courses on my.harvard (the system Harvard students use for finding courses).
 You will be provided a sequence of chat messages you and the user have exchanged in the chat assistant panel.
 Please provide detailed, accurate, and concise responses to the questions asked, utilizing the following tools when necessary:
 {tools}
 
-For example, when question about metadata is asked, use run_query_tool first. 
-When asked about more content-realated things, use the retrieval_QA_tool.
+run_query_tool should be used to search for courses in the database. retrieval_QA_tool uses vector similarity, so it might not always return the most accurate results.
+You can use the tools in any order and as many times as you need to answer the user's question.
+It is recommended to execute queries using run_query_tool first, and only resort to retrieval_QA_tool if you are unable to find something.
+When using run_query_tool, use SQL's OR functionality to also match expanded abbreviations. Also consider using non-case-sensitive and non-space-sensitive queries to maximize the chances of finding good results.
+
 If you are unsure about the answer, you can ask the user for more information.
 Additionally, you only have access to the database of courses for the FALL 2024 semester.
 If you suspect that the user is asking about something that is not in the database, you can communicate that to the user.
@@ -97,8 +100,12 @@ Some additional context which may be useful as a Harvard-specific chatbot:
 - A "GENED" is a general education requirement.
 - Harvard students use abbreviations for courses like CS (Computer Science), AM (Applied Math), EC (Economics), etc.
 - If a course search does not yield any results, try again with slightly different phrasing, abbreviations, or wording.
-"""
-        )),
+- If a course search seems to yield inaccurate results, try again but expand out abbreviations or use more general terms at your discretion.
+""")
+
+prompt = ChatPromptTemplate(
+    messages=[
+        SystemMessage(content=system_prompt),
         MessagesPlaceholder(variable_name="chat_history"),
         HumanMessagePromptTemplate.from_template("{input}"),
         MessagesPlaceholder(variable_name="agent_scratchpad")
