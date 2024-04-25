@@ -25,8 +25,6 @@ class VectorDatabase:
         # Store ChromaDB persistent path
         self.db_path = db_path
 
-        print(self.db_path)
-
         # Setup ChromaDB vector database
         self.client = chromadb.PersistentClient(path=db_path)
 

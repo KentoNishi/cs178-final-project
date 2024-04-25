@@ -8,16 +8,8 @@ from textwrap import dedent
 import sqlite3
 import sys
 import io
-from typing import TypedDict
+from Common import Filters
 
-# NOTE: Need to update this and the typescript stuff to allow for more/different filters
-Filters = TypedDict("Filters",
-  {
-    "num_embeds": int,
-    "termDescription": str,
-    "catalogSubject": str
-  }
-)
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))

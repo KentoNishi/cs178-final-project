@@ -1,6 +1,5 @@
 import json
-from openai import OpenAI
-
+from Common import ArtifactContent
 
 class Artifact:
     """
@@ -111,3 +110,17 @@ class Artifact:
             "references": self.references,
             "answer": self.answer
         }
+
+    def to_artifact_content(self) -> ArtifactContent:
+        """
+        Dump the Artifact object as an ArtifactContent object.
+        """
+
+        return ArtifactContent(
+            query_message= self.query_message,
+            prompts= self.prompts,
+            response_contents= self.response_contents,
+            response_objects= self.response_objects,
+            references= self.references,
+            answer= self.answer if self.answer else ""
+        )

@@ -1,16 +1,10 @@
-from fastapi import FastAPI, HTTPException, APIRouter
-from pydantic import BaseModel
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, APIRouter
 from dotenv import load_dotenv
-import asyncio
-from typing import Dict, List, Any
-from queue import Queue
-from threading import Thread
 from fastapi.middleware.cors import CORSMiddleware
-from Bot import Bot, Filters
+from Bot import Bot
+from Common import ArtifactContent, ClientMessage
 from VectorDatabase import VectorDatabase
 import os
-from Artifact import Artifact
 
 app = FastAPI()
 
@@ -19,6 +13,7 @@ app = FastAPI()
 origins = [
     "*"
 ]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -30,26 +25,13 @@ app.add_middleware(
 # load OPENAI_API_KEY
 load_dotenv()
 
-# This class is essentially an artifact but without the methods, to allow passing it between front and backend
-class ArtifactContent(BaseModel):
-  query_message     : str
-  prompts           : list[str]
-  response_objects  : list[str]
-  response_contents : list[str]
-  references        : list[list[str]]
-  answer            : str
-
-class ClientMessage(BaseModel):
-  artifact : ArtifactContent
-  filters  : Filters
-
 class Server:
   def __init__(self, bot: Bot):
     self.bot = bot
     self.router = APIRouter()
     self.router.add_api_route("/recommend", self.recommend, methods=["POST"])
 
-  def recommend(self, query : ClientMessage) -> Artifact:
+  def recommend(self, query : ClientMessage) -> ArtifactContent:
 
     artifact = query.artifact
     # Reconstruct messages from what's was sent
@@ -58,8 +40,8 @@ class Server:
       prev_messages.append(bot.user_message(prompt))
       prev_messages.append(bot.assistant_message(resp))
 
-    return self.bot.answer_query(query=artifact.query_message, prev_messages=prev_messages, filters=query.filters)
-
+    artifact = self.bot.answer_query(query=artifact.query_message, prev_messages=prev_messages, filters=query.filters)
+    return artifact.to_artifact_content()
 
 vec_db = VectorDatabase(db_path=os.path.join(os.path.dirname(__file__), "vector_db"))
 bot = Bot(vector_db=vec_db)
