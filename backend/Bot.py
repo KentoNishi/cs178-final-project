@@ -8,6 +8,7 @@ from textwrap import dedent
 import sqlite3
 import sys
 import io
+import json
 from Common import Filters
 
 
@@ -47,19 +48,25 @@ class Bot:
   def find_keywords(self, query: str, prev_messages: list[dict[str, str]]):
 
     sys_role = dedent(f"""\
-      You are a keyword identifier for a course/class search system for a university.
-      You should maintain any words that could help identify a course, while removing very common words."""
+      You are a keyword identifier for a course/class search system for a university. You job is to first decide if the user is asking the bot to search for a NEW course or if they are asking about a course that has already been mentioned by the bot.
+      You should maintain any words that could help identify a course, while removing very common words.
+      Based on the user's inputs, you should also determine how many results should be retrieved from the database (default n=3).
+      If the user input doesn't seem like a course search query, you should just output null. Don't shy away from outputting null, another agent will handle the query if it's not a course search query."""
     )
 
     examples = [
       self.user_message(
-        "Find me courses about algorithms and data structures, or perhaps differential privacy."
+        "Find me 5 courses about algorithms and data structures, or perhaps differential privacy."
       ),
-      self.assistant_message("algorithms data structures differential privacy"),
+      self.assistant_message("{ \"keywords\": \"algorithms data structures differential privacy\", \"num_results\": 5}"),
       self.user_message("Also only show me courses by John Clarkson"),
-      self.assistant_message("John Clarkson algorithms data structures differential privacy"),
-      self.user_message("Monday also"),
-      self.assistant_message("John Clarkson algorithms data structures differential privacy Monday"),
+      self.assistant_message("{ \"keywords\": \"John Clarkson algorithms data structures differential privacy\", \"num_results\": 5}"),
+      self.user_message("Okay forget it, just show me some courses by him"),
+      self.assistant_message("{ \"keywords\": \"John Clarkson\", \"num_results\": 3}"),
+      self.user_message("Which of those are about complexity theory?"),
+      self.assistant_message("null"),
+      self.user_message("Which one of those are undergrad courses?"),
+      self.assistant_message("null")
     ]
 
     prompt = dedent(f"""\
@@ -73,7 +80,9 @@ class Bot:
       Latest user query:
       ```
       {query}
-      ```"""
+      ```
+      
+      Always answer in the format of {{"keywords": "space separated keywords", "num_results": n}} where n is the appropriate number of results to retrieve."""
     )
 
     messages = [self.system_message(sys_role), *examples, self.user_message(prompt)]
@@ -96,7 +105,7 @@ class Bot:
     context = []
 
     # If we have any keywords to work with, let's use them
-    if keyword_artifact.get_latest_response():
+    if keyword_artifact.get_latest_response() and "keywords" in keyword_artifact.get_latest_response():
 
       # Temporary hack to redirect stdout and stderr for this operation to not have to deal with these add existing embedding id things
       temp_out = io.StringIO()
@@ -105,10 +114,15 @@ class Bot:
       sys.stdout = temp_out
       sys.stderr = temp_out
 
+      # print("keywords", )
+
+      parsed_as_json = json.loads(keyword_artifact.get_latest_response())
+      print(parsed_as_json)
+
       context = self.vector_db.query(
         source="course_chunks",
-        query=keyword_artifact.get_latest_response(),
-        n_results=1,
+        query=parsed_as_json["keywords"],
+        n_results=parsed_as_json["num_results"],
         filters=self.__clean_filters(filters=filters),
       )
 
