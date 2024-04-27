@@ -21,4 +21,4 @@ class ArtifactContent(BaseModel):
 
 class ClientMessage(BaseModel):
   artifact : ArtifactContent
-  filters  : Filters
+  # filters  : Filters

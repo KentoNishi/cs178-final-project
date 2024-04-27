@@ -23,17 +23,17 @@
 
     const client_message : ClientMessage = {
       artifact: artifact,
-      filters: {
-        // TODO: Use these properly from the UI
-        // I think num_embeds should be a dropdown or small 3 buttons with only one selectable at once with opts 3, 5, 10
-        // termDescription and catalogSubject (think we should add ~2 more) would be dropdowns
-        // I think the content for these should be established via a 'handshake' API call to the backend to populate these upon page load
-        "num_embeds": 3,
-        "termDescription": "",
-        "catalogSubject": ""
-      }
+      // filters: {
+      //   // TODO: Use these properly from the UI
+      //   // I think num_embeds should be a dropdown or small 3 buttons with only one selectable at once with opts 3, 5, 10
+      //   // termDescription and catalogSubject (think we should add ~2 more) would be dropdowns
+      //   // I think the content for these should be established via a 'handshake' API call to the backend to populate these upon page load
+      //   "num_embeds": 3,
+      //   "termDescription": "",
+      //   "catalogSubject": ""
+      // }
     };
-
+    $backendState = BackendState.Generating;
     fetch("http://127.0.0.1:8000/recommend", {
       method: 'POST',
       headers: {
@@ -57,7 +57,7 @@
       artifact = data;
 
       console.log(data);
-      initializeNewSystemMessage(data.recommendation);
+      initializeNewSystemMessage(data.answer);
     })
     .catch(error => {
       backendState.set(BackendState.Error);

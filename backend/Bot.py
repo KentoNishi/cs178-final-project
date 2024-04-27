@@ -44,7 +44,7 @@ class Bot:
   def system_message(self, message):
     return {"role": "system", "content": message}
 
-  def find_keywords(self, query: str):
+  def find_keywords(self, query: str, prev_messages: list[dict[str, str]]):
 
     sys_role = dedent(f"""\
       You are a keyword identifier for a course/class search system for a university.
@@ -53,20 +53,24 @@ class Bot:
 
     examples = [
       self.user_message(
-        "Please tell me about any classes that discuss algorithms and data structures, or perhaps differential privacy."
+        "Find me courses about algorithms and data structures, or perhaps differential privacy."
       ),
       self.assistant_message("algorithms data structures differential privacy"),
-      self.user_message("Actually, I want a course taught by John Clarkson, preferably on Mondays."),
-      self.assistant_message("John Clarkson Mondays"),
-      self.user_message("Please tell me more about that"),
-      self.assistant_message(""),
+      self.user_message("Also only show me courses by John Clarkson"),
+      self.assistant_message("John Clarkson algorithms data structures differential privacy"),
+      self.user_message("Monday also"),
+      self.assistant_message("John Clarkson algorithms data structures differential privacy Monday"),
     ]
 
     prompt = dedent(f"""\
-      Identify any keywords from the following text. Do not remove any words that could help identify the course,
+      Identify any keywords from the following conversation. Do not remove any words that could help identify the course,
       but remove all common words that could appear in the description of any course. Your response should be a
       subset of words from the original text.
 
+      Previous 5 user messages: ```
+      {prev_messages[-5:]}
+      ```
+      Latest user query:
       ```
       {query}
       ```"""
@@ -86,9 +90,9 @@ class Bot:
     """Creates a dictionary of filters only if they are valid/non-empty/non-default."""
     return {k: v for k, v in filters.items() if k != "num_embeds" and v}
 
-  def retrieve_context(self, query, filters: Filters, threshold=0.6):
+  def retrieve_context(self, query, filters: Filters, prev_messages: list[dict[str, str]], threshold=0.6):
 
-    keyword_artifact = self.find_keywords(query)
+    keyword_artifact = self.find_keywords(query, prev_messages)
     context = []
 
     # If we have any keywords to work with, let's use them
@@ -104,9 +108,11 @@ class Bot:
       context = self.vector_db.query(
         source="course_chunks",
         query=keyword_artifact.get_latest_response(),
-        n_results=filters["num_embeds"],
+        n_results=1,
         filters=self.__clean_filters(filters=filters),
       )
+
+      print(context)
 
       # Restore stdout/stderr to original values
       sys.stdout = old_out
@@ -134,7 +140,7 @@ class Bot:
   def answer_query(
     self, query: str, prev_messages: list[dict[str, str]], filters: Filters
   ):
-    context = self.retrieve_context(query, filters)
+    context = self.retrieve_context(query, filters, prev_messages)
 
     info = self.context_to_course_info(context)
 

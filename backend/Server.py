@@ -40,7 +40,11 @@ class Server:
       prev_messages.append(bot.user_message(prompt))
       prev_messages.append(bot.assistant_message(resp))
 
-    artifact = self.bot.answer_query(query=artifact.query_message, prev_messages=prev_messages, filters=query.filters)
+    artifact = self.bot.answer_query(query=artifact.query_message, prev_messages=prev_messages, filters={
+      "num_embeds": 3,
+      "catalogSubject": "",
+      "termDescription": ""
+    })
     return artifact.to_artifact_content()
 
 vec_db = VectorDatabase(db_path=os.path.join(os.path.dirname(__file__), "vector_db"))

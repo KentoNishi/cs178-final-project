@@ -27,7 +27,7 @@ export interface Filters {
 
 export interface ClientMessage {
   artifact: ArtifactContent,
-  filters: Filters
+  // filters: Filters
 }
 export enum BackendState {
   Generating = "generating",
