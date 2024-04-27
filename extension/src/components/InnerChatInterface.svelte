@@ -57,7 +57,7 @@
       artifact = data;
 
       console.log(data);
-      initializeNewSystemMessage(data.answer);
+      initializeNewSystemMessage(data.recommendation);
     })
     .catch(error => {
       backendState.set(BackendState.Error);

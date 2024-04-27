@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing_extensions import TypedDict
 from pydantic import BaseModel
 
 # NOTE: Need to update this and the typescript stuff to allow for more/different filters

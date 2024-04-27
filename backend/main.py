@@ -21,6 +21,7 @@ from langchain.prompts import (
     MessagesPlaceholder,
 )
 from langchain.memory import ConversationBufferMemory, ConversationBufferWindowMemory
+from Common import ClientMessage
 
 class CallbackHandler(BaseCallbackHandler):
     """Callback handler class to give Kento the hooks he wants."""
@@ -140,11 +141,10 @@ async def root():
     return {"message": "API for my.harvard chatbot"}
 
 @app.post("/recommend")
-async def recommend_classes(query: Query):
+async def recommend_classes(query: ClientMessage):
     """Non-streaming version"""
     try:
-        print(query.question)
-        result = agent_executor(query.question)
+        result = agent_executor(query.artifact.query_message)
         return {"recommendation": result['output']}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
