@@ -29,3 +29,8 @@ export interface ClientMessage {
   artifact: ArtifactContent,
   filters: Filters
 }
+export enum BackendState {
+  Generating = "generating",
+  Default = "default",
+  Error = "error",
+};

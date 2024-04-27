@@ -1,0 +1,3 @@
+Welcome to the my.harvard ChatGPT assistant!
+
+My job is to assist your exploration of courses offered at Harvard for Fall 2024. I can access the my.harvard Fall 2024 course catalog, and I can combine my knowledge of Harvard vernacular with your questions to help you find the courses that best suit your interests. Feel free to start by asking about a specific course, interest, instructor, or anything else!

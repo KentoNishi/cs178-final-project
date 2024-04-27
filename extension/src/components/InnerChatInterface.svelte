@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { chatMessages } from '../ts/stores';
-  import { Sender, type ArtifactContent, type ClientMessage } from '../ts/types';
+  import { Sender, type ArtifactContent, type ClientMessage, BackendState } from '../ts/types';
+  import { chatMessages, backendState } from '../ts/stores';
+  import { SyncLoader } from 'svelte-loading-spinners';
   import { dispatchUserInput, addUserInputListener, initializeNewSystemMessage } from '../utils/chat';
+  import SvelteMarkdown from 'svelte-markdown';
 
   let userInputValue = '';
   let artifact : ArtifactContent = {
@@ -43,11 +45,14 @@
     })
     .then(response => {
       if (!response.ok) {
+        backendState.set(BackendState.Error);
         throw new Error('Network response was not ok');
       }
+      backendState.set(BackendState.Default);
       return response.json();
     })
     .then(data => {
+      backendState.set(BackendState.Default);
       // For now, just creating new system message with the whole result. Work on streaming to come
       artifact = data;
 
@@ -55,6 +60,7 @@
       initializeNewSystemMessage(data.answer);
     })
     .catch(error => {
+      backendState.set(BackendState.Error);
       console.error('Fetch error:', error);
     });
   })
@@ -86,12 +92,21 @@
     {#each $chatMessages as message, i}
       <div class="message" class:system={message.sender === Sender.System} class:user={message.sender === Sender.User}>
         {#if message.sender === Sender.System}
-          <div class="system-message">{message.tokens.join('')}</div>
+          <div class="system-message">
+            <SvelteMarkdown source={message.tokens.join('')} />
+          </div>
         {:else}
           <div class="user-message">{message.tokens.join('')}</div>
         {/if}
       </div>
     {/each}
+    {#if $backendState === BackendState.Generating}
+      <div class="message">
+        <div class="system-message" style="transform: scale({24 / 60});">
+          <SyncLoader color="#FFFFFF" size="60" unit="px" />
+        </div>
+      </div>
+    {/if}
   </div>
   <div class="message-input">
     <input type="text" class="textbox" placeholder="Type a message..." bind:value={userInputValue} on:keydown={(e) => {
@@ -141,6 +156,12 @@
     background-color: var(--color-primary);
     color: white;
     float: left;
+    white-space: pre-wrap;
+    transform-origin: top left;
+  }
+
+  :global(ul, ol) {
+    margin: 1rem;
   }
 
   .user-message {
