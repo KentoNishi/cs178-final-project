@@ -16,8 +16,8 @@
       My Weaknesses 👎
     </strong>
     <ul>
-      <li>Maintain long conversations</li>
       <li>Find courses by codes and other specifics</li>
+      <li>Maintain context in conversations</li>
     </ul>
   </div>
 
