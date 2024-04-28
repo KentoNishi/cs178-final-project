@@ -3,8 +3,8 @@
   // @ts-ignore
   import Moveable from 'svelte-moveable';
   import InnerChatInterface from './InnerChatInterface.svelte';
-  import welcome from '../assets/welcome.md?raw';
-    import { Sender } from '../ts/types';
+  // import welcome from '../assets/welcome.md?raw';
+  // import { Sender } from '../ts/types';
   let target: HTMLElement;
   const resizeCallback = ({ width, height }: { width: number; height: number }) => {
     target.style.width = `${width}px`;
@@ -13,23 +13,30 @@
   let updateRect: any;
 
   const resetMessages = () => {
-    $chatMessages = [{
-      tokens: [welcome],
-      sender: Sender.System
-    }];
+    $chatMessages = [];
   };
+  const focus = () => (target.querySelector('input[type="text"]') as HTMLInputElement).focus();
   $: if ($chatPanelOpen) {
     fetch('http://127.0.0.1:8000/reset-agent', {
       method: 'POST'
     }).then(resetMessages);
+    focus();
   }
 </script>
 
 <svelte:window on:resize={updateRect} />
 
-<div class="bottom-right" class:open={$chatPanelOpen} bind:this={target} style="width: 50%; height: 50%;">
+<div
+  class="bottom-right"
+  class:open={$chatPanelOpen}
+  class:closed={!$chatPanelOpen}
+  bind:this={target} style="width: 60%; height: 60%;"
+>
   <InnerChatInterface />
-  <button class="material-symbols-outlined close-button" on:click|preventDefault={() => { $chatPanelOpen = false; }}>close</button>
+  <button class="material-symbols-outlined close-button" on:click|preventDefault={() => {
+    $chatPanelOpen = false;
+    resetMessages();
+   }}>delete_forever</button>
 </div>
 {#if $chatPanelOpen}
   <Moveable
@@ -62,6 +69,8 @@
   }
   :global(.closed) {
     opacity: 0;
+    pointer-events: none;
+    touch-action: none;
   }
   .close-button {
     position: absolute;

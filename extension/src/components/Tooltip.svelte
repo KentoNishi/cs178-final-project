@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { chatPanelOpen } from '../ts/stores';
-    import Popup from '../pages/Popup.svelte';
+  import { backendState, chatPanelOpen } from '../ts/stores';
+  import { BackendState } from '../ts/types';
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="tooltip-content bg-primary" on:click|preventDefault={() => {
+<div class="tooltip-content bg-secondary" on:click|preventDefault={() => {
+  $backendState = BackendState.Default;
   $chatPanelOpen = true;
 }}>
-  You can now search courses with ChatGPT! 
+  Browse and discover courses with ChatGPT! 
   <a href="/" on:click|preventDefault style="margin-left: 12px;">
     Start Chat
   </a>
@@ -29,7 +30,7 @@
     margin-left: -5px;
     border-width: 5px;
     border-style: solid;
-    border-color: var(--color-primary) transparent transparent transparent;
+    border-color: var(--color-secondary) transparent transparent transparent;
   }
   a {
     color: white;

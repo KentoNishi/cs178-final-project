@@ -5,6 +5,7 @@
   import { SyncLoader } from 'svelte-loading-spinners';
   import { dispatchUserInput, addUserInputListener, initializeNewSystemMessage } from '../utils/chat';
   import SvelteMarkdown from 'svelte-markdown';
+  import WelcomeMessage from './WelcomeMessage.svelte';
 
   let userInputValue = '';
   let artifact : ArtifactContent = {
@@ -87,8 +88,13 @@
 </script>
 
 <div class="split-wrapper">
-  <div class="title">Untitled Chat</div>
+  <div class="title">my.Harvard ChatGPT Assistant</div>
   <div class="message-scroller" bind:this={scrollTarget}>
+    <div class="message system">
+      <div class="system-message">
+        <WelcomeMessage />
+      </div>
+    </div>
     {#each $chatMessages as message, i}
       <div class="message" class:system={message.sender === Sender.System} class:user={message.sender === Sender.User}>
         {#if message.sender === Sender.System}
@@ -162,6 +168,11 @@
 
   :global(ul, ol) {
     margin: 1rem;
+    margin-bottom: 0px;
+  }
+
+  :global(ul>*>ul, ol>*>ol, ul>*>ol, ol>*>ul) {
+    margin-bottom: 0px;
   }
 
   .user-message {

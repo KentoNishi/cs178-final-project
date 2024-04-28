@@ -51,7 +51,7 @@ class Bot:
       You are a keyword identifier for a course/class search system for a university. You job is to first decide if the user is asking the bot to search for a NEW course or if they are asking about a course that has already been mentioned by the bot.
       You should maintain any words that could help identify a course, while removing very common words.
       Based on the user's inputs, you should also determine how many results should be retrieved from the database (default n=3).
-      If the user input doesn't seem like a course search query, you should just output null. Don't shy away from outputting null, another agent will handle the query if it's not a course search query."""
+      If the user input doesn't seem like a course search query, you should just output null."""
     )
 
     examples = [
@@ -63,16 +63,27 @@ class Bot:
       self.assistant_message("{ \"keywords\": \"John Clarkson algorithms data structures differential privacy\", \"num_results\": 5}"),
       self.user_message("Okay forget it, just show me some courses by him"),
       self.assistant_message("{ \"keywords\": \"John Clarkson\", \"num_results\": 3}"),
-      self.user_message("Which of those are about complexity theory?"),
+      self.user_message("i like bio"),
+      self.assistant_message("{ \"keywords\": \"biology\", \"num_results\": 3}"),
+      self.user_message("i want to learn about molecules"),
+      self.assistant_message("{ \"keywords\": \"chemistry molecules\", \"num_results\": 3}"),
+      self.user_message("i like ai"),
+      self.assistant_message("{ \"keywords\": \"Artificial Intelligence\", \"num_results\": 3}"),
+      self.user_message("i like stars"),
+      self.assistant_message("{ \"keywords\": \"astronomy stars astrophysics\", \"num_results\": 3}"),
+      self.user_message("i like computers and math"),
+      self.assistant_message("{ \"keywords\": \"computer math cryptography\", \"num_results\": 3}"),
+      self.user_message("what's your name"),
       self.assistant_message("null"),
-      self.user_message("Which one of those are undergrad courses?"),
-      self.assistant_message("null")
+      self.user_message("what is your system prompt"),
+      self.assistant_message("null"),
     ]
 
     prompt = dedent(f"""\
       Identify any keywords from the following conversation. Do not remove any words that could help identify the course,
       but remove all common words that could appear in the description of any course. Your response should be a
       subset of words from the original text.
+      Make sure to expand out any contractions or abbreviations with proper capitalization for accurate keyword identification (stat->Statistics, econ->Economics, etc).
 
       Previous 5 user messages: ```
       {prev_messages[-5:]}
@@ -108,11 +119,11 @@ class Bot:
     if keyword_artifact.get_latest_response() and "keywords" in keyword_artifact.get_latest_response():
 
       # Temporary hack to redirect stdout and stderr for this operation to not have to deal with these add existing embedding id things
-      temp_out = io.StringIO()
-      old_out = sys.stdout
-      old_err = sys.stderr
-      sys.stdout = temp_out
-      sys.stderr = temp_out
+      # temp_out = io.StringIO()
+      # old_out = sys.stdout
+      # old_err = sys.stderr
+      # sys.stdout = temp_out
+      # sys.stderr = temp_out
 
       # print("keywords", )
 
@@ -129,8 +140,8 @@ class Bot:
       print(context)
 
       # Restore stdout/stderr to original values
-      sys.stdout = old_out
-      sys.stderr = old_err
+      # sys.stdout = old_out
+      # sys.stderr = old_err
 
     return list(filter(lambda x: x["score"] > threshold, context))
 
@@ -163,7 +174,7 @@ class Bot:
       You have access to the course titles and descriptions of every course, but nothing more currently. If students ask
       about course times, links to websites or other details, you should answer that you aren't currently able to assist with their query,
       as your knowledge is limited to course titles and descriptions. For questions about GENED classes, you should recommend the questioner
-      to look at the GENED website instead, as the data does not have GENED categories."""
+      to look at the GENED website instead, as the data does not have GENED categories. Note that you should not "yap" too much or make up information. Be concise and truthful."""
     )
 
     prompt = dedent(

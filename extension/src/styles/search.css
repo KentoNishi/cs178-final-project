@@ -1,9 +1,13 @@
 :root {
-  --color-primary: #3a72ab;
+  --color-primary: #a23339;
+  --color-secondary: #3a72ab;
 }
 
 .bg-primary {
   background-color: var(--color-primary) !important;
+}
+.bg-secondary {
+  background-color: var(--color-secondary) !important;
 }
 .tooltip {
   position: absolute;

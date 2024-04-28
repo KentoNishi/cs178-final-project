@@ -3,9 +3,6 @@ import { BackendState, Sender, type ChatInputCallback, type Message } from './ty
 import welcome from '../assets/welcome.md?raw';
 
 export let chatPanelOpen = writable(false);
-export let chatMessages = writable([{
-  tokens: [welcome],
-  sender: Sender.System
-}] as Message[]);
+export let chatMessages = writable([] as Message[]);
 export let chatUserMessageInputListeners = writable([] as ChatInputCallback[]);
 export let backendState = writable(BackendState.Default);
