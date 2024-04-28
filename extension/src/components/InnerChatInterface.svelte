@@ -8,14 +8,7 @@
   import WelcomeMessage from './WelcomeMessage.svelte';
 
   let userInputValue = '';
-  let artifact : ArtifactContent = {
-    query_message     : "",
-    prompts           : [],
-    response_objects  : [],
-    response_contents : [],
-    references        : [],
-    answer            : ""
-  };
+  export let artifact : ArtifactContent;
 
 
   // Adding input listener to call API upon user input
@@ -55,10 +48,20 @@
     .then(data => {
       backendState.set(BackendState.Default);
       // For now, just creating new system message with the whole result. Work on streaming to come
-      artifact = data;
+      artifact = data as ArtifactContent;
 
       console.log(data);
-      initializeNewSystemMessage(data.answer);
+      initializeNewSystemMessage(
+        data.answer + 
+        (data.references.length ? `
+<details style="margin-left: 2px; margin-bottom: -12px; font-style: italic;">
+  <summary style="display: list-item; cursor: pointer; margin-top: 1rem;">See references used to generate this response</summary>
+  <ul style="margin-top: -5rem; margin-left: 2rem; margin-bottom: -3.5rem;">
+    ${data.references.map((ref: string) => `<li>${ref}</li>`).join('')}
+  </ul>
+</details>
+` : '')
+      );
     })
     .catch(error => {
       backendState.set(BackendState.Error);

@@ -3,6 +3,7 @@
   // @ts-ignore
   import Moveable from 'svelte-moveable';
   import InnerChatInterface from './InnerChatInterface.svelte';
+    import type { ArtifactContent } from '../ts/types';
   // import welcome from '../assets/welcome.md?raw';
   // import { Sender } from '../ts/types';
   let target: HTMLElement;
@@ -11,15 +12,28 @@
     target.style.height = `${height}px`;
   };
   let updateRect: any;
+  let artifact: ArtifactContent = {
+    query_message     : "",
+    prompts           : [],
+    response_objects  : [],
+    response_contents : [],
+    references        : [],
+    answer            : ""
+  };
 
   const resetMessages = () => {
     $chatMessages = [];
   };
   const focus = () => (target.querySelector('input[type="text"]') as HTMLInputElement).focus();
   $: if ($chatPanelOpen) {
-    fetch('http://127.0.0.1:8000/reset-agent', {
-      method: 'POST'
-    }).then(resetMessages);
+    artifact = {
+      query_message     : "",
+      prompts           : [],
+      response_objects  : [],
+      response_contents : [],
+      references        : [],
+      answer            : ""
+    };
     focus();
   }
 </script>
@@ -32,7 +46,7 @@
   class:closed={!$chatPanelOpen}
   bind:this={target} style="width: 60%; height: 60%;"
 >
-  <InnerChatInterface />
+  <InnerChatInterface bind:artifact />
   <button class="material-symbols-outlined close-button" on:click|preventDefault={() => {
     $chatPanelOpen = false;
     resetMessages();

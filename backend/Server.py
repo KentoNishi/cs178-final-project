@@ -30,6 +30,7 @@ class Server:
     self.bot = bot
     self.router = APIRouter()
     self.router.add_api_route("/recommend", self.recommend, methods=["POST"])
+    self.router.add_api_route("/reset-agent", self.reset_agent, methods=["POST"])
 
   def recommend(self, query : ClientMessage) -> ArtifactContent:
 

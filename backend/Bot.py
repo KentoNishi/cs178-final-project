@@ -110,7 +110,7 @@ class Bot:
     """Creates a dictionary of filters only if they are valid/non-empty/non-default."""
     return {k: v for k, v in filters.items() if k != "num_embeds" and v}
 
-  def retrieve_context(self, query, filters: Filters, prev_messages: list[dict[str, str]], threshold=0.6):
+  def retrieve_context(self, query, filters: Filters, prev_messages: list[dict[str, str]], threshold=0.0):
 
     keyword_artifact = self.find_keywords(query, prev_messages)
     context = []
