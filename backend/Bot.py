@@ -116,7 +116,11 @@ class Bot:
     context = []
 
     # If we have any keywords to work with, let's use them
-    if keyword_artifact.get_latest_response() and "keywords" in keyword_artifact.get_latest_response():
+    if (
+      keyword_artifact.get_latest_response()
+      and "keywords" in keyword_artifact.get_latest_response()
+      and "num_results" in keyword_artifact.get_latest_response()
+    ):
 
       # Temporary hack to redirect stdout and stderr for this operation to not have to deal with these add existing embedding id things
       # temp_out = io.StringIO()
