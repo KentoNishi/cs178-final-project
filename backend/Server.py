@@ -32,8 +32,11 @@ class Server:
     self.router.add_api_route("/recommend", self.recommend, methods=["POST"])
 
   def recommend(self, query : ClientMessage) -> ArtifactContent:
+    # CODE POINTER: Notice how the ClientMessage includes an ArtifactContent attribute - the backend receives ArtifactContent,
+    # and will return an updated ArtifactContent object, constantly maintaining this object to maintain a `Session`.
 
     artifact = query.artifact
+
     # Reconstruct messages from what was sent
     prev_messages = []
     for prompt, resp in zip(artifact.prompts, artifact.response_contents):
@@ -48,8 +51,15 @@ class Server:
     # Returning an ArtifactContent object (contains all of the content from Artifact, just no methods etc, don't want to send useless stuff)
     return artifact.to_artifact_content()
 
+# Setup our vector database wrapper, needed to create a Bot, which relies on helper functions
+# from the VectorDatabase class
 vec_db = VectorDatabase(db_path=os.path.join(os.path.dirname(__file__), "vector_db"))
+
+# Instantiate the Bot! Our AI Assistant is alive!
 bot = Bot(vector_db=vec_db)
+
+# Create the Server, using the bot to answer questions :)
 server = Server(bot=bot)
 
+# Setup the router to be able to start handling requests.
 app.include_router(server.router)

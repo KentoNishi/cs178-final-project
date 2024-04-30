@@ -8,6 +8,11 @@ class Artifact:
 
     def __init__(self, query_message, prompt, response, references) -> None:
         self.query_message    : str        = query_message
+
+        # CODE POINTER: The artifact object really helps maintain the `session` concept on the backend.
+        # it's within artifacts that the whole user's history is stored, between the `prompts`, `response_contents`,
+        # `response_objects` and `references`, you have a strong history of all exchanges in each session.
+
         self.prompts          : list[str]  = [prompt]
         self.response_objects              = [response.model_dump_json()]
         self.response_contents: list[str]  = [response.choices[0].message.content]

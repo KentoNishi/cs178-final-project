@@ -15,7 +15,10 @@ from Common import Filters
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-
+# CODE POINTER: The Bot class is our instantiation of the 'AI Assistant' concept.
+# it maintains 'sessions' via the use of 'Artifact's (see Artifact.py for more).
+# The `generateResponse` action is instantiated primarily by the `answer_query` method,
+# however, this uses many helper methods from within this Bot class.
 class Bot:
   """
   Bot class to handle the actual computation & interactions with openAI API.
@@ -175,6 +178,11 @@ class Bot:
       this is a bit of a relic, but I plan on bringing it back in the future) and returning an artifact, where the `answer` stores
       the system's response to return and render on the frontend.
     """
+
+    # CODE POINTER: These next two lines are key to the `references` concept, first finding matches by embeddings,
+    # Then looking up more data for each match to provide comprehensive context for users as to why they might be seeing the
+    # results that they get.
+
     # Get context from vector db
     context = self.retrieve_context(query, filters, prev_messages)
 
@@ -229,6 +237,7 @@ class Bot:
     )
 
     # Create artifact and set answer to respond to query
+    # CODE POINTER: Note here how `references = info` - here we store in the artifact what info was used to generate the response.
     artifact = Artifact(
       query_message=query, prompt=prompt, response=response, references=info
     )
