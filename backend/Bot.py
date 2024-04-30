@@ -37,16 +37,25 @@ class Bot:
     return client.chat.completions.create(**kwargs)
 
   def user_message(self, message):
+    """Helper to take a string and make a user message from it."""
     return {"role": "user", "content": message}
 
   def assistant_message(self, message):
+    """Helper to take a string and make an assistant message from it."""
     return {"role": "assistant", "content": message}
 
   def system_message(self, message):
+    """Helper to take a string and make a system message from it."""
     return {"role": "system", "content": message}
 
-  def find_keywords(self, query: str, prev_messages: list[dict[str, str]]):
-
+  def find_keywords(self, query: str, prev_messages: list[dict[str, str]]) -> Artifact:
+    """
+      First API call in the pipeline, this step does the following:
+        1) Identifies keywords from the prompt, to be used in the embedding search
+        2) Identifies the number of results that should be retrieved from the vector database.
+      Returns an Artifact, where the latest response identifies the keywords and number of embeddings to use for context retrieval.
+      NOTE: Currently does not `set_answer` before returning.
+    """
     sys_role = dedent(f"""\
       You are a keyword identifier for a course/class search system for a university. You job is to first decide if the user is asking the bot to search for a NEW course or if they are asking about a course that has already been mentioned by the bot.
       You should maintain any words that could help identify a course, while removing very common words.
@@ -92,7 +101,7 @@ class Bot:
       ```
       {query}
       ```
-      
+
       Always answer in the format of {{"keywords": "space separated keywords", "num_results": n}} where n is the appropriate number of results to retrieve."""
     )
 
@@ -111,7 +120,11 @@ class Bot:
     return {k: v for k, v in filters.items() if k != "num_embeds" and v}
 
   def retrieve_context(self, query, filters: Filters, prev_messages: list[dict[str, str]], threshold=0.0):
-
+    """
+      Takes the result from `find_keywords` API call, and queries the vector database to get appropriate
+      context to answer the original question. Returns a list of objects, filtered by having similarity score
+      of at least `threshold`.
+    """
     keyword_artifact = self.find_keywords(query, prev_messages)
     context = []
 
@@ -122,17 +135,7 @@ class Bot:
       and "num_results" in keyword_artifact.get_latest_response()
     ):
 
-      # Temporary hack to redirect stdout and stderr for this operation to not have to deal with these add existing embedding id things
-      # temp_out = io.StringIO()
-      # old_out = sys.stdout
-      # old_err = sys.stderr
-      # sys.stdout = temp_out
-      # sys.stderr = temp_out
-
-      # print("keywords", )
-
       parsed_as_json = json.loads(keyword_artifact.get_latest_response())
-      print(parsed_as_json)
 
       context = self.vector_db.query(
         source="course_chunks",
@@ -141,15 +144,13 @@ class Bot:
         filters=self.__clean_filters(filters=filters),
       )
 
-      print(context)
-
-      # Restore stdout/stderr to original values
-      # sys.stdout = old_out
-      # sys.stderr = old_err
-
     return list(filter(lambda x: x["score"] > threshold, context))
 
   def context_to_course_info(self, context):
+    """
+      Takes the context information from `retrieve_context` (i.e. from the vector database),
+      and pulls all the course information we want directly from the SQL database.
+    """
     with sqlite3.connect("courses.db") as con:
       cur = con.cursor()
       ids = [str(x["metadata"]["courseID"]) for x in context]
@@ -168,11 +169,19 @@ class Bot:
 
   def answer_query(
     self, query: str, prev_messages: list[dict[str, str]], filters: Filters
-  ):
+  ) -> Artifact:
+    """
+      Main pipeline for the Bot. This takes in a user query, along with all previous messages exchanged and filters (currently somewhat redundant,
+      this is a bit of a relic, but I plan on bringing it back in the future) and returning an artifact, where the `answer` stores
+      the system's response to return and render on the frontend.
+    """
+    # Get context from vector db
     context = self.retrieve_context(query, filters, prev_messages)
 
+    # Retrieve more course info using those vector db results from the main SQL db
     info = self.context_to_course_info(context)
 
+    # Then perform API call using this course info
     sys_role = dedent(f"""\
       You are a university course search assistant. Your goal is to help students find courses offered at the university that interest them.
       You have access to the course titles and descriptions of every course, but nothing more currently. If students ask
@@ -181,6 +190,7 @@ class Bot:
       to look at the GENED website instead, as the data does not have GENED categories. Note that you should not "yap" too much or make up information. Be concise and truthful."""
     )
 
+    # Prompt in case there is no relevant course information found
     prompt = dedent(
       f"""\
         You are a university course search assistant. You could not find any relevant information to assist the user's current query.
@@ -190,6 +200,8 @@ class Bot:
         {query}
         ```"""
     )
+
+    # If we do have relevant course information, change the prompt to include it
     if info:
       prompt = dedent(f"""\
         You are a university course search assistant. The following context may help you answer the user query. If it does not help, you can ignore it.
@@ -204,16 +216,19 @@ class Bot:
         ```"""
       )
 
+    # Setup messages to make API call
     prev_messages = [
       self.system_message(sys_role),
       *prev_messages,
       self.user_message(prompt),
     ]
 
+    # Generate response
     response = self.gpt_get_completion(
       messages=prev_messages, model="gpt-4-turbo", temperature=0, user="anon"
     )
 
+    # Create artifact and set answer to respond to query
     artifact = Artifact(
       query_message=query, prompt=prompt, response=response, references=info
     )

@@ -34,7 +34,7 @@ class Server:
   def recommend(self, query : ClientMessage) -> ArtifactContent:
 
     artifact = query.artifact
-    # Reconstruct messages from what's was sent
+    # Reconstruct messages from what was sent
     prev_messages = []
     for prompt, resp in zip(artifact.prompts, artifact.response_contents):
       prev_messages.append(bot.user_message(prompt))
@@ -45,6 +45,7 @@ class Server:
       "catalogSubject": "",
       "termDescription": ""
     })
+    # Returning an ArtifactContent object (contains all of the content from Artifact, just no methods etc, don't want to send useless stuff)
     return artifact.to_artifact_content()
 
 vec_db = VectorDatabase(db_path=os.path.join(os.path.dirname(__file__), "vector_db"))
