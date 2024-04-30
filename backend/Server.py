@@ -55,7 +55,7 @@ class Server:
 # from the VectorDatabase class
 vec_db = VectorDatabase(db_path=os.path.join(os.path.dirname(__file__), "vector_db"))
 
-# Instantiate the Bot! Our AI Assistant is alive!
+# CODE POINTER: Instantiate the Bot! Our AI Assistant is alive!
 bot = Bot(vector_db=vec_db)
 
 # Create the Server, using the bot to answer questions :)

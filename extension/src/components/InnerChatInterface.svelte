@@ -18,13 +18,7 @@
     const client_message : ClientMessage = {
       artifact: artifact,
       // filters: {
-      //   // TODO: Use these properly from the UI
-      //   // I think num_embeds should be a dropdown or small 3 buttons with only one selectable at once with opts 3, 5, 10
-      //   // termDescription and catalogSubject (think we should add ~2 more) would be dropdowns
-      //   // I think the content for these should be established via a 'handshake' API call to the backend to populate these upon page load
-      //   "num_embeds": 3,
-      //   "termDescription": "",
-      //   "catalogSubject": ""
+      // NOTE: Now generated dynamically by the backend, no longer need to pass this deterministically from frontend.
       // }
     };
     $backendState = BackendState.Generating;
@@ -51,8 +45,11 @@
       artifact = data as ArtifactContent;
 
       console.log(data);
+
+      // CODE POINTER: Here is where we add the references into the system message, to render them together
+      // on the frontend. The HTML `details` tag handles the 'expand/minimize' actions.
       initializeNewSystemMessage(
-        data.answer + 
+        data.answer +
         (data.references.length ? `
 <details style="margin-left: 2px; margin-bottom: -12px; font-style: italic;">
   <summary style="display: list-item; cursor: pointer; margin-top: 1rem;">See references used to generate this response</summary>

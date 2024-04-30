@@ -39,6 +39,9 @@ class Bot:
 
     return client.chat.completions.create(**kwargs)
 
+  # CODE POINTER: These helper functions are tied to the `message` concept - in particular, its types.
+  # User messages must be wrapped by `user_message`, and system messages are wrapped by `assistant` according to the
+  # openAI spec. The system message is used for guiding the Bot's behavior via a 'system role'.
   def user_message(self, message):
     """Helper to take a string and make a user message from it."""
     return {"role": "user", "content": message}
